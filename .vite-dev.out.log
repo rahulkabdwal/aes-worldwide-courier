@@ -1,0 +1,35 @@
+
+> aes-worldwide-courier@0.0.0 dev
+> vite --host 127.0.0.1 --clearScreen false
+
+Port 5173 is in use, trying another one...
+Port 5174 is in use, trying another one...
+
+  [32m[1mVITE[22m v7.3.0[39m  [2mready in [0m[1m203[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5175[22m/[39m
+[2m4:12:44 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/admin/AdminLoginPage.tsx, /src/pages/admin/AdminShipmentDetailPage.tsx, /src/pages/admin/AdminShipmentsPage.tsx, /src/components/admin/AdminShell.tsx[22m
+[2m4:13:16 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/admin/AdminShipmentDetailPage.tsx, /src/pages/admin/AdminShipmentsPage.tsx[22m
+[2m4:13:24 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/admin/CityCombobox.tsx[22m
+[2m4:14:03 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin/AdminShipmentsPage.tsx, /src/index.css[22m
+[2m4:14:37 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin/AdminShipmentDetailPage.tsx, /src/index.css[22m
+[2m4:14:50 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/layout/Layout.tsx[22m
+[2m4:15:26 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Tracking.tsx, /src/index.css[22m
+[2m4:15:30 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Tracking.tsx, /src/index.css[22m
+[2m4:15:33 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin/AdminShipmentDetailPage.tsx, /src/index.css[22m
+[2m4:15:43 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin/AdminShipmentsPage.tsx, /src/index.css[22m
+[2m4:15:56 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/admin/AdminShipmentDetailPage.tsx, /src/pages/admin/AdminShipmentsPage.tsx[22m
+[2m4:16:09 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/admin/AdminShipmentDetailPage.tsx, /src/pages/admin/AdminShipmentsPage.tsx[22m
+[2m4:40:53 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/admin/CityCombobox.tsx[22m
+[2m4:41:02 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/admin/AdminShipmentDetailPage.tsx, /src/pages/admin/AdminShipmentsPage.tsx[22m
+[2m4:41:08 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin/AdminShipmentsPage.tsx, /src/index.css[22m
+[2m4:41:17 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin/AdminShipmentDetailPage.tsx, /src/index.css[22m
+[2m5:00:57 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/admin/AdminLoginPage.tsx, /src/pages/admin/AdminShipmentDetailPage.tsx, /src/pages/admin/AdminShipmentsPage.tsx, /src/components/admin/AdminShell.tsx[22m
+[2m5:01:08 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/admin/CityCombobox.tsx[22m
+[2m5:01:22 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/admin/AdminShipmentDetailPage.tsx, /src/pages/admin/AdminShipmentsPage.tsx[22m
+[2m5:01:34 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin/AdminShipmentsPage.tsx, /src/index.css[22m
+[2m5:01:42 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin/AdminShipmentDetailPage.tsx, /src/index.css[22m
+[2m5:02:22 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Tracking.tsx, /src/index.css[22m
+[2m5:02:31 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/Tracking.tsx, /src/index.css[22m
+[2m5:28:30 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/admin/CityCombobox.tsx[22m
+[2m5:29:06 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/admin/AdminShipmentsPage.tsx, /src/index.css[22m
