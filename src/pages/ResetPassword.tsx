@@ -85,7 +85,14 @@ export default function ResetPassword() {
       setSessionError(null);
 
       try {
-        const isRecoveryUrl = recoveryUrl.type === "recovery";
+        console.log("Recovery URL:", recoveryUrl);
+        console.log("Current URL:", window.location.href);
+
+        const hasRecoveryContext =
+          recoveryUrl.type === "recovery" ||
+          Boolean(recoveryUrl.code) ||
+          Boolean(recoveryUrl.accessToken) ||
+          Boolean(recoveryUrl.refreshToken);
 
         if (recoveryUrl.accessToken && recoveryUrl.refreshToken) {
           const { error } = await supabase.auth.setSession({
@@ -114,7 +121,6 @@ export default function ResetPassword() {
         if (!isMounted) return;
 
         const hasSession = Boolean(data.session);
-        const hasRecoveryContext = isRecoveryUrl || Boolean(recoveryUrl.code);
         setHasRecoverySession(hasSession && hasRecoveryContext);
         if (!hasSession || !hasRecoveryContext) {
           setSessionError(
