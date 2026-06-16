@@ -4,6 +4,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --brand-primary: #b96a4c;
+  --brand-primary-hover: #a45a40;
+  --brand-primary-light: #f6e9e3;
+  --brand-primary-dark: #7a3d28;
+
   --radius-sm: 0.125rem;
   --radius-md: 0.25rem;
   --radius-lg: 0.375rem;
@@ -17,8 +22,12 @@
   --color-popover: hsl(0 0% 100%);
   --color-popover-foreground: hsl(0 0% 9%);
 
-  --color-primary: hsl(0 0% 9%);
-  --color-primary-foreground: hsl(0 0% 98%);
+  --color-primary: var(--brand-primary);
+  --color-primary-hover: var(--brand-primary-hover);
+  --color-primary-light: var(--brand-primary-light);
+  --color-primary-dark: var(--brand-primary-dark);
+  --color-primary-foreground: hsl(0 0% 9%);
+  --color-primary-border: var(--brand-primary-dark);
 
   --color-secondary: hsl(0 0% 96.1%);
   --color-secondary-foreground: hsl(0 0% 9%);
@@ -34,7 +43,7 @@
 
   --color-border: hsl(0 0% 89.8%);
   --color-input: hsl(0 0% 89.8%);
-  --color-ring: hsl(0 0% 9%);
+  --color-ring: var(--brand-primary-dark);
 
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;

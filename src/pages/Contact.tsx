@@ -215,7 +215,7 @@ console.log("User agent:", navigator.userAgent);
                 <div>
                   <h4 className="font-medium text-lg">Phone</h4>
                   <p className="text-neutral-500">+91 9811371018</p>
-                  <p className="text-neutral-500">+91 XXXXXXXXXX</p>
+                  <p className="text-neutral-500">+91 7827741901</p>
                 </div>
               </div>
               <div className="flex gap-4">

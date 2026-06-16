@@ -57,7 +57,7 @@ export default function Home() {
             <span className="block">with</span>
             <span className="block">
               Absolute{" "}
-              <span className="text-red-600 inline-block">
+              <span className="text-primary inline-block">
                 {displayedText}
                 <span className="animate-pulse">|</span>
               </span>.
@@ -69,7 +69,7 @@ export default function Home() {
             </span>
             <span className="block md:whitespace-nowrap">
               with Absolute{" "}
-              <span className="text-red-600 inline-block">
+              <span className="text-primary inline-block">
                 {displayedText}
                 <span className="animate-pulse">|</span>
               </span>.
@@ -104,28 +104,28 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-0 divide-y md:divide-y-0 md:divide-x divide-neutral-200">
             {/* Stat 1: Years */}
             <div className="py-4 md:py-3 md:px-5 text-center flex flex-col items-center justify-center first:pt-0 md:first:pt-3 md:first:pl-0">
-              <Clock className="w-7 h-7 text-red-500 mb-2" />
+              <Clock className="w-7 h-7 text-primary mb-2" />
               <div className="text-2xl md:text-3xl font-bold text-neutral-900">30+</div>
               <div className="text-[11px] font-medium text-neutral-500 mt-1.5 tracking-wide uppercase">Years in Business</div>
             </div>
             
             {/* Stat 2: Shipments */}
             <div className="py-4 md:py-3 md:px-5 text-center flex flex-col items-center justify-center">
-              <Package className="w-7 h-7 text-red-500 mb-2" />
+              <Package className="w-7 h-7 text-primary mb-2" />
               <div className="text-2xl md:text-3xl font-bold text-neutral-900">10,000+</div>
               <div className="text-[11px] font-medium text-neutral-500 mt-1.5 tracking-wide uppercase">Shipments Delivered</div>
             </div>
             
             {/* Stat 3: Countries */}
             <div className="py-4 md:py-3 md:px-5 text-center flex flex-col items-center justify-center">
-              <Globe className="w-7 h-7 text-red-500 mb-2" />
+              <Globe className="w-7 h-7 text-primary mb-2" />
               <div className="text-2xl md:text-3xl font-bold text-neutral-900">150+</div>
               <div className="text-[11px] font-medium text-neutral-500 mt-1.5 tracking-wide uppercase">Countries Covered</div>
             </div>
             
             {/* Stat 4: Clients */}
             <div className="py-4 md:py-3 md:px-5 text-center flex flex-col items-center justify-center last:pb-0 md:last:pb-3 md:last:pr-0">
-              <Building2 className="w-7 h-7 text-red-500 mb-2" />
+              <Building2 className="w-7 h-7 text-primary mb-2" />
               <div className="text-2xl md:text-3xl font-bold text-neutral-900">500+</div>
               <div className="text-[11px] font-medium text-neutral-500 mt-1.5 tracking-wide uppercase">Business Clients</div>
             </div>

@@ -20,6 +20,12 @@ export const NETWORK_CARRIER_OPTIONS = [
   "None",
   "DHL",
   "FedEx",
+  "UPS",
+  "Aramex",
+  "Blue Dart",
+  "DTDC",
+  "Delhivery",
+  "Speed Post",
 ] as const;
 
 export type ShipmentSortOrder = "newest" | "oldest";

@@ -6,7 +6,7 @@ export default function AboutUs() {
       <section className="bg-neutral-950 text-white">
         <div className="max-w-7xl mx-auto px-6 py-24 md:py-32">
           <div className="max-w-4xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-red-500 mb-5">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-primary mb-5">
               About Us
             </p>
             <h1 className="text-5xl md:text-7xl font-semibold tracking-tighter leading-none mb-8">

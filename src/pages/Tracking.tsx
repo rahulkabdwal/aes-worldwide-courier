@@ -9,6 +9,101 @@ type Shipment = Database["public"]["Tables"]["shipments"]["Row"];
 type TrackingEvent = Database["public"]["Tables"]["tracking_events"]["Row"];
 type VisibleTrackingEvent = TrackingEvent & { event_title: string };
 
+type TrackCourierTrackingEvent = {
+  status?: string;
+  description?: string;
+  message?: string;
+  location?: string;
+  city?: string;
+  timestamp?: string;
+  date?: string;
+  time?: string;
+  event_time?: string;
+};
+
+const apiCarriers = new Set(["blue dart", "dtdc", "speed post", "delhivery"]);
+const forwardingLinkCarriers = new Set(["dhl", "fedex", "ups", "aramex"]);
+
+function normalizeCarrier(value: string | null) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function isApiCarrier(value: string | null) {
+  const carrier = normalizeCarrier(value);
+
+  return carrier.length > 0 && carrier !== "none" && apiCarriers.has(carrier);
+}
+
+function isForwardingLinkCarrier(value: string | null) {
+  const carrier = normalizeCarrier(value);
+
+  return carrier.length > 0 && carrier !== "none" && forwardingLinkCarriers.has(carrier);
+}
+
+function getTrackCourierEvents(response: unknown): TrackCourierTrackingEvent[] {
+  if (!response || typeof response !== "object") {
+    return [];
+  }
+
+  const record = response as Record<string, unknown>;
+  const possibleEventArrays = [
+    record.events,
+    record.tracking,
+    record.trackingEvents,
+    record.checkpoints,
+    record.history,
+    record.data,
+  ];
+
+  for (const value of possibleEventArrays) {
+    if (Array.isArray(value)) {
+      return value as TrackCourierTrackingEvent[];
+    }
+
+    if (value && typeof value === "object") {
+      const nested = value as Record<string, unknown>;
+      const nestedArrays = [
+        nested.events,
+        nested.tracking,
+        nested.trackingEvents,
+        nested.checkpoints,
+        nested.history,
+      ];
+
+      const nestedEvents = nestedArrays.find(Array.isArray);
+      if (nestedEvents) {
+        return nestedEvents as TrackCourierTrackingEvent[];
+      }
+    }
+  }
+
+  return [];
+}
+
+function mapTrackCourierEvents(
+  response: unknown,
+  shipmentData: Shipment,
+): TrackingEvent[] {
+  return getTrackCourierEvents(response)
+    .map((event, index) => {
+      const eventTime = event.timestamp ?? event.event_time ?? event.date ?? event.time ?? null;
+      const eventTitle =
+        event.description ?? event.status ?? event.message ?? "Shipment update";
+
+      return {
+        id: `trackcourier-${shipmentData.id}-${index}`,
+        shipment_id: shipmentData.id,
+        event_title: eventTitle,
+        event_description: event.description ?? event.message ?? event.status ?? null,
+        location_city: event.location ?? event.city ?? null,
+        location_country: null,
+        event_time: eventTime,
+        created_at: eventTime ?? new Date().toISOString(),
+      };
+    })
+    .filter((event) => Boolean(event.event_title?.trim()));
+}
+
 function formatDate(value: string | null) {
   if (!value) return "N/A";
 
@@ -95,18 +190,69 @@ export default function Tracking() {
         return;
       }
 
-      const eventsQuery = await supabase
-        .from("tracking_events")
-        .select("*")
-        .eq("shipment_id", shipmentData.id)
-        .order("event_time", { ascending: false });
+      const loadSupabaseEvents = async () => {
+        const eventsQuery = await supabase
+          .from("tracking_events")
+          .select("*")
+          .eq("shipment_id", shipmentData.id)
+          .order("event_time", { ascending: false });
 
-      const eventsData = (eventsQuery.data ?? []) as TrackingEvent[];
-      const eventsError = eventsQuery.error;
+        const eventsData = (eventsQuery.data ?? []) as TrackingEvent[];
+        const eventsError = eventsQuery.error;
 
-      if (eventsError) {
-        throw new Error(eventsError.message);
+        if (eventsError) {
+          throw new Error(eventsError.message);
+        }
+
+        return eventsData;
+      };
+
+      const networkCarrier = shipmentData.network_carrier?.trim() ?? "";
+      const networkTrackingId = shipmentData.network_tracking_id?.trim() ?? "";
+      const hasNetworkCarrierAndTrackingId =
+        networkCarrier.length > 0 && networkTrackingId.length > 0;
+      const shouldUseTrackCourier =
+        hasNetworkCarrierAndTrackingId && isApiCarrier(networkCarrier);
+      const shouldForceLocalEvents =
+        !hasNetworkCarrierAndTrackingId ||
+        normalizeCarrier(networkCarrier) === "none" ||
+        isForwardingLinkCarrier(networkCarrier);
+
+      if (shouldUseTrackCourier) {
+        try {
+          const { data, error: trackCourierError } = await supabase.functions.invoke(
+            'track-courier',
+            {
+              body: {
+                trackingNumber: shipmentData.network_tracking_id,
+                carrierName: shipmentData.network_carrier,
+              },
+            },
+          );
+
+          if (trackCourierError) {
+            throw trackCourierError;
+          }
+
+          const mappedEvents = mapTrackCourierEvents(data, shipmentData);
+
+          setShipment(shipmentData);
+          setEvents(mappedEvents);
+          return;
+        } catch {
+          // Silently fall back to local tracking events.
+        }
       }
+
+      if (shouldForceLocalEvents || !shouldUseTrackCourier) {
+        const eventsData = await loadSupabaseEvents();
+
+        setShipment(shipmentData);
+        setEvents(eventsData);
+        return;
+      }
+
+      const eventsData = await loadSupabaseEvents();
 
       setShipment(shipmentData);
       setEvents(eventsData);
@@ -138,7 +284,7 @@ export default function Tracking() {
                 onChange={(e) => setTrackingId(e.target.value.replace(/\D/g, ""))}
                 inputMode="numeric"
                 pattern="[0-9]*"
-                className="w-full pl-10 md:pl-12 pr-24 md:pr-28 py-3.5 md:py-4 rounded-xl border border-neutral-200 bg-neutral-50 focus:bg-white focus:ring-2 focus:ring-black/5 focus:border-black outline-none transition-all font-mono text-sm md:text-lg shadow-sm placeholder:text-sm md:placeholder:text-lg"
+                className="w-full pl-10 md:pl-12 pr-24 md:pr-28 py-3.5 md:py-4 rounded-xl border border-neutral-200 bg-neutral-50 focus:bg-white focus:ring-2 focus:ring-primary/15 focus:border-primary outline-none transition-all font-mono text-sm md:text-lg shadow-sm placeholder:text-sm md:placeholder:text-lg"
               />
               <Search className="absolute left-3.5 md:left-4 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 md:w-5 md:h-5" />
               <button
@@ -205,7 +351,7 @@ export default function Tracking() {
                   {canShowProofOfDelivery ? (
                     <div className="mb-6 md:mb-8 rounded-xl border border-green-100 bg-green-50 px-4 py-3 text-sm md:text-base">
                       <a
-                        href={shipment.pod_url}
+                        href={shipment.pod_url ?? undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 font-semibold text-green-900 hover:text-green-700 transition-colors"

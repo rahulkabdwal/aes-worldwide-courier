@@ -23,7 +23,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [location]);
 
   return (
-    <div className="min-h-screen flex flex-col font-sans text-foreground bg-[#fafafa] selection:bg-neutral-900 selection:text-white">
+    <div className="min-h-screen flex flex-col font-sans text-foreground bg-[#fafafa] selection:bg-primary-dark selection:text-white">
       <nav
         className={cn(
           "fixed top-0 left-0 right-0",
@@ -43,19 +43,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-600">
-            <Link href="/" onClick={scrollToTop} className="hover:text-black transition-colors">
+            <Link href="/" onClick={scrollToTop} className="hover:text-primary-dark transition-colors">
               Home
             </Link>
-            <Link href="/services" onClick={scrollToTop} className="hover:text-black transition-colors">
+            <Link href="/services" onClick={scrollToTop} className="hover:text-primary-dark transition-colors">
               Services
             </Link>
-            <Link href="/about-us" onClick={scrollToTop} className="hover:text-black transition-colors">
+            <Link href="/about-us" onClick={scrollToTop} className="hover:text-primary-dark transition-colors">
               About Us
             </Link>
-            <Link href="/tracking" onClick={scrollToTop} className="hover:text-black transition-colors">
+            <Link href="/tracking" onClick={scrollToTop} className="hover:text-primary-dark transition-colors">
               Tracking
             </Link>
-            <Link href="/contact" onClick={scrollToTop} className="hover:text-black transition-colors">
+            <Link href="/contact" onClick={scrollToTop} className="hover:text-primary-dark transition-colors">
               Contact
             </Link>
           </div>
@@ -122,27 +122,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <h4 className="font-medium mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm text-neutral-500">
               <li>
-                <Link href="/" onClick={scrollToTop} className="hover:text-black">
+                <Link href="/" onClick={scrollToTop} className="hover:text-primary-dark">
                   Home
                 </Link>
               </li>
               <li>
-                <Link href="/services" onClick={scrollToTop} className="hover:text-black">
+                <Link href="/services" onClick={scrollToTop} className="hover:text-primary-dark">
                   Services
                 </Link>
               </li>
               <li>
-                <Link href="/about-us" onClick={scrollToTop} className="hover:text-black">
+                <Link href="/about-us" onClick={scrollToTop} className="hover:text-primary-dark">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link href="/tracking" onClick={scrollToTop} className="hover:text-black">
+                <Link href="/tracking" onClick={scrollToTop} className="hover:text-primary-dark">
                   Tracking
                 </Link>
               </li>
               <li>
-                <Link href="/contact" onClick={scrollToTop} className="hover:text-black">
+                <Link href="/contact" onClick={scrollToTop} className="hover:text-primary-dark">
                   Contact
                 </Link>
               </li>
@@ -156,12 +156,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     Sant Nagar, East of Kailash,<br/>
                     New Delhi-65</li>
               <li>
-                <a href="mailto:aeswwc@gmail.com" className="hover:text-black">
+                <a href="mailto:aeswwc@gmail.com" className="hover:text-primary-dark">
                   aeswwc@gmail.com
                 </a>
               </li>
               <li>+91 9811371018</li>
-              <li>+91 XXXXX XXXXX</li>
+              <li>+91 7827741901</li>
             </ul>
           </div>
 

@@ -43,7 +43,7 @@ export default function Services() {
     <Layout>
       <div className="bg-neutral-900 text-white py-24 px-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-5xl md:text-6xl font-semibold tracking-tighter mb-6 text-red-500">Our Services</h1>
+          <h1 className="text-5xl md:text-6xl font-semibold tracking-tighter mb-6 text-primary">Our Services</h1>
           <p className="text-xl text-neutral-400 max-w-2xl">
             Bespoke logistics solutions designed for speed, security, and specialized handling requirements.
           </p>
