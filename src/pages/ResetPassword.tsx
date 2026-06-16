@@ -41,8 +41,9 @@ function getRecoveryTokensFromUrl() {
   const refreshToken = params.get("refresh_token");
   const type = params.get("type") ?? searchParams.get("type");
   const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash");
 
-  return { accessToken, refreshToken, type, code };
+  return { accessToken, refreshToken, type, code, tokenHash };
 }
 
 function validatePasswords(password: string, confirmPassword: string) {
@@ -85,14 +86,17 @@ export default function ResetPassword() {
       setSessionError(null);
 
       try {
-        console.log("Recovery URL:", recoveryUrl);
-        console.log("Current URL:", window.location.href);
+        const recoveryType = recoveryUrl.type;
+        const tokenHash = recoveryUrl.tokenHash;
+
+        console.log("Recovery URL:", window.location.href);
+        console.log("token_hash:", tokenHash);
+        console.log("type:", recoveryType);
 
         const hasRecoveryContext =
-          recoveryUrl.type === "recovery" ||
+          Boolean(recoveryUrl.accessToken && recoveryUrl.refreshToken) ||
           Boolean(recoveryUrl.code) ||
-          Boolean(recoveryUrl.accessToken) ||
-          Boolean(recoveryUrl.refreshToken);
+          Boolean(tokenHash && recoveryType === "recovery");
 
         if (recoveryUrl.accessToken && recoveryUrl.refreshToken) {
           const { error } = await supabase.auth.setSession({
@@ -107,6 +111,15 @@ export default function ResetPassword() {
           const { error } = await supabase.auth.exchangeCodeForSession(
             recoveryUrl.code,
           );
+
+          if (error) {
+            throw error;
+          }
+        } else if (tokenHash && recoveryType === "recovery") {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: "recovery",
+          });
 
           if (error) {
             throw error;
@@ -161,6 +174,7 @@ export default function ResetPassword() {
     recoveryUrl.accessToken,
     recoveryUrl.code,
     recoveryUrl.refreshToken,
+    recoveryUrl.tokenHash,
     recoveryUrl.type,
   ]);
 
