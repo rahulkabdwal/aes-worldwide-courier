@@ -4,10 +4,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --brand-primary: #b96a4c;
-  --brand-primary-hover: #a45a40;
-  --brand-primary-light: #f6e9e3;
-  --brand-primary-dark: #7a3d28;
+  --brand-primary: #D2541C;
+  --brand-primary-hover: #B54615;
+  --brand-primary-light: #F3E1DA;
+  --brand-primary-dark: #8C3510;
 
   --radius-sm: 0.125rem;
   --radius-md: 0.25rem;
@@ -26,7 +26,7 @@
   --color-primary-hover: var(--brand-primary-hover);
   --color-primary-light: var(--brand-primary-light);
   --color-primary-dark: var(--brand-primary-dark);
-  --color-primary-foreground: hsl(0 0% 9%);
+  --color-primary-foreground: hsl(0 0% 98%);
   --color-primary-border: var(--brand-primary-dark);
 
   --color-secondary: hsl(0 0% 96.1%);

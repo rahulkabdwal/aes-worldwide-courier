@@ -51,35 +51,18 @@ export default function Home() {
         }}
       >
         <div className="absolute inset-0 bg-black/65"></div>
-        <div className="relative max-w-5xl mx-auto px-6 text-center space-y-4 md:space-y-8 animate-in fade-in duration-700">
-          <h1 className="flex md:hidden flex-col items-center justify-center text-center mx-auto w-full gap-1 text-3xl font-bold tracking-tight leading-tight text-white">
-            <span className="block">Worldwide Delivery</span>
-            <span className="block">with</span>
-            <span className="block">
-              Absolute{" "}
-              <span className="text-primary inline-block">
-                {displayedText}
-                <span className="animate-pulse">|</span>
-              </span>.
-            </span>
+        <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center justify-center px-5 py-8 text-center animate-in fade-in duration-700 sm:px-6 md:py-10">
+          <h1 className="mb-6 w-full whitespace-normal text-center text-4xl font-black leading-tight tracking-tight text-white sm:whitespace-nowrap sm:text-4xl md:mb-8 md:text-5xl lg:text-7xl xl:text-8xl">
+            <span className="text-primary">AES</span>{" "}
+            <span>World Wide Courier</span>
           </h1>
-          <h1 className="hidden md:flex flex-col items-center justify-center text-center mx-auto w-full gap-2 md:text-5xl lg:text-5xl font-bold tracking-tight leading-tight text-white">
-            <span className="block md:whitespace-nowrap">
-              Worldwide Delivery
-            </span>
-            <span className="block md:whitespace-nowrap">
-              with Absolute{" "}
-              <span className="text-primary inline-block">
-                {displayedText}
-                <span className="animate-pulse">|</span>
-              </span>.
-            </span>
-          </h1>
-          <p className="text-sm md:text-lg text-gray-200 mx-auto leading-snug md:leading-relaxed max-w-[20rem] md:max-w-2xl">
-            Secure international logistics with real-time tracking
-            and dependable delivery worldwide.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 pt-8 md:pt-8 justify-center">
+
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-medium text-gray-200 mt-4 mb-10 text-center">
+            Worldwide Delivery with Absolute{" "}
+            <span className="text-primary">{displayedText}</span>
+            <span className="animate-pulse">|</span>.
+          </h2>
+          <div className="flex flex-col justify-center gap-3 sm:flex-row md:gap-4">
             <Link
               href="/tracking"
               onClick={scrollToTop}
@@ -105,28 +88,28 @@ export default function Home() {
             {/* Stat 1: Years */}
             <div className="py-4 md:py-3 md:px-5 text-center flex flex-col items-center justify-center first:pt-0 md:first:pt-3 md:first:pl-0">
               <Clock className="w-7 h-7 text-primary mb-2" />
-              <div className="text-2xl md:text-3xl font-bold text-neutral-900">30+</div>
+              <div className="text-2xl md:text-3xl font-bold text-primary">30+</div>
               <div className="text-[11px] font-medium text-neutral-500 mt-1.5 tracking-wide uppercase">Years in Business</div>
             </div>
             
             {/* Stat 2: Shipments */}
             <div className="py-4 md:py-3 md:px-5 text-center flex flex-col items-center justify-center">
               <Package className="w-7 h-7 text-primary mb-2" />
-              <div className="text-2xl md:text-3xl font-bold text-neutral-900">10,000+</div>
+              <div className="text-2xl md:text-3xl font-bold text-primary">10,000+</div>
               <div className="text-[11px] font-medium text-neutral-500 mt-1.5 tracking-wide uppercase">Shipments Delivered</div>
             </div>
             
             {/* Stat 3: Countries */}
             <div className="py-4 md:py-3 md:px-5 text-center flex flex-col items-center justify-center">
               <Globe className="w-7 h-7 text-primary mb-2" />
-              <div className="text-2xl md:text-3xl font-bold text-neutral-900">150+</div>
+              <div className="text-2xl md:text-3xl font-bold text-primary">150+</div>
               <div className="text-[11px] font-medium text-neutral-500 mt-1.5 tracking-wide uppercase">Countries Covered</div>
             </div>
             
             {/* Stat 4: Clients */}
             <div className="py-4 md:py-3 md:px-5 text-center flex flex-col items-center justify-center last:pb-0 md:last:pb-3 md:last:pr-0">
               <Building2 className="w-7 h-7 text-primary mb-2" />
-              <div className="text-2xl md:text-3xl font-bold text-neutral-900">500+</div>
+              <div className="text-2xl md:text-3xl font-bold text-primary">500+</div>
               <div className="text-[11px] font-medium text-neutral-500 mt-1.5 tracking-wide uppercase">Business Clients</div>
             </div>
           </div>

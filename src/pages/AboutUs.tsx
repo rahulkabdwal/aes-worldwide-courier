@@ -55,7 +55,7 @@ export default function AboutUs() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-16 border-b border-neutral-200">
             <div className="rounded-2xl bg-neutral-50 border border-neutral-200 p-8">
-              <p className="text-4xl font-semibold tracking-tight text-neutral-900">
+              <p className="text-4xl font-semibold tracking-tight text-primary">
                 30+
               </p>
               <p className="text-sm uppercase tracking-wide text-neutral-500 mt-2">
@@ -63,7 +63,7 @@ export default function AboutUs() {
               </p>
             </div>
             <div className="rounded-2xl bg-neutral-50 border border-neutral-200 p-8">
-              <p className="text-4xl font-semibold tracking-tight text-neutral-900">
+              <p className="text-4xl font-semibold tracking-tight text-primary">
                 150+
               </p>
               <p className="text-sm uppercase tracking-wide text-neutral-500 mt-2">
@@ -71,7 +71,7 @@ export default function AboutUs() {
               </p>
             </div>
             <div className="rounded-2xl bg-neutral-50 border border-neutral-200 p-8">
-              <p className="text-4xl font-semibold tracking-tight text-neutral-900">
+              <p className="text-4xl font-semibold tracking-tight text-primary">
                 10,000+
               </p>
               <p className="text-sm uppercase tracking-wide text-neutral-500 mt-2">

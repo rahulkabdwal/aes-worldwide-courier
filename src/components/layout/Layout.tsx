@@ -11,6 +11,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const isHome = location === "/";
   const isServices = location === "/services";
+  const navLinkClass = (href: string) =>
+    cn(
+      "transition-colors hover:text-primary-dark",
+      location === href && "text-primary-dark",
+    );
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -38,24 +43,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
       >
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <Link href="/" onClick={scrollToTop} className="flex items-center">
-            <img src={logo} alt="AES Worldwide" className="h-14 w-auto" />
+            <img
+              src={logo}
+              alt="AES Worldwide"
+              className="h-14 w-auto object-contain md:h-14"
+            />
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-600">
-            <Link href="/" onClick={scrollToTop} className="hover:text-primary-dark transition-colors">
+            <Link href="/" onClick={scrollToTop} className={navLinkClass("/")}>
               Home
             </Link>
-            <Link href="/services" onClick={scrollToTop} className="hover:text-primary-dark transition-colors">
+            <Link href="/services" onClick={scrollToTop} className={navLinkClass("/services")}>
               Services
             </Link>
-            <Link href="/about-us" onClick={scrollToTop} className="hover:text-primary-dark transition-colors">
+            <Link href="/about-us" onClick={scrollToTop} className={navLinkClass("/about-us")}>
               About Us
             </Link>
-            <Link href="/tracking" onClick={scrollToTop} className="hover:text-primary-dark transition-colors">
+            <Link href="/tracking" onClick={scrollToTop} className={navLinkClass("/tracking")}>
               Tracking
             </Link>
-            <Link href="/contact" onClick={scrollToTop} className="hover:text-primary-dark transition-colors">
+            <Link href="/contact" onClick={scrollToTop} className={navLinkClass("/contact")}>
               Contact
             </Link>
           </div>
@@ -72,19 +81,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Mobile Nav */}
         {mobileOpen && (
           <div className="absolute top-full left-0 right-0 bg-white border-b border-neutral-200 p-6 md:hidden flex flex-col gap-4 animate-in slide-in-from-top-2">
-            <Link href="/" onClick={scrollToTop} className="text-lg font-medium py-2">
+            <Link href="/" onClick={scrollToTop} className={cn("text-lg font-medium py-2", location === "/" && "text-primary-dark")}>
               Home
             </Link>
-            <Link href="/services" onClick={scrollToTop} className="text-lg font-medium py-2">
+            <Link href="/services" onClick={scrollToTop} className={cn("text-lg font-medium py-2", location === "/services" && "text-primary-dark")}>
               Services
             </Link>
-            <Link href="/about-us" onClick={scrollToTop} className="text-lg font-medium py-2">
+            <Link href="/about-us" onClick={scrollToTop} className={cn("text-lg font-medium py-2", location === "/about-us" && "text-primary-dark")}>
               About Us
             </Link>
-            <Link href="/tracking" onClick={scrollToTop} className="text-lg font-medium py-2">
+            <Link href="/tracking" onClick={scrollToTop} className={cn("text-lg font-medium py-2", location === "/tracking" && "text-primary-dark")}>
               Tracking
             </Link>
-            <Link href="/contact" onClick={scrollToTop} className="text-lg font-medium py-2">
+            <Link href="/contact" onClick={scrollToTop} className={cn("text-lg font-medium py-2", location === "/contact" && "text-primary-dark")}>
               Contact
             </Link>
           </div>
