@@ -58,8 +58,8 @@ serve(async (req) => {
     const createdAt = payload.created_at ?? new Date().toISOString();
 
     const { data, error } = await resend.emails.send({
-      from: "onboarding@resend.dev",
-      to: ["rahulkabdwal60@gmail.com"],
+      from: "AES Worldwide Courier <noreply@aeswwc.com>",
+      to: ["aeswwc@gmail.com"],
       subject: "New Quote Request - AES Worldwide Courier",
       html: `
         <h2>New Quote Request - AES Worldwide Courier</h2>
