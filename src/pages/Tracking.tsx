@@ -115,6 +115,9 @@ function formatDate(value: string | null) {
     day: "numeric",
     month: "short",
     year: "numeric",
+    ...(/T00:00:00(?:\.000)?(?:Z|\+00:00)$/.test(value)
+      ? { timeZone: "UTC" }
+      : {}),
   });
 }
 
@@ -129,6 +132,9 @@ function formatOptionalDate(value: string | null) {
     day: "numeric",
     month: "short",
     year: "numeric",
+    ...(/T00:00:00(?:\.000)?(?:Z|\+00:00)$/.test(value)
+      ? { timeZone: "UTC" }
+      : {}),
   });
 }
 

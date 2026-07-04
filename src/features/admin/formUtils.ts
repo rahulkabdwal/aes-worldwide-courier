@@ -90,7 +90,14 @@ export function formatDateTime(value: string | null) {
     year: "numeric",
     month: "short",
     day: "numeric",
+    // Dates selected in the admin are stored at UTC midnight. Keeping their
+    // display in UTC prevents the calendar day changing in western timezones.
+    ...(isUtcMidnight(value) ? { timeZone: "UTC" } : {}),
   });
+}
+
+function isUtcMidnight(value: string) {
+  return /T00:00:00(?:\.000)?(?:Z|\+00:00)$/.test(value);
 }
 
 export function toDateTimeLocalInput(value: string | null) {
@@ -103,13 +110,21 @@ export function toDateTimeLocalInput(value: string | null) {
     return "";
   }
 
+
+  // New date-only values use UTC midnight as a timezone-neutral marker.
+  if (isUtcMidnight(value)) {
+    return date.toISOString().slice(0, 10);
+  }
+
   const timezoneOffsetMs = date.getTimezoneOffset() * 60 * 1000;
   const localDate = new Date(date.getTime() - timezoneOffsetMs);
   return localDate.toISOString().slice(0, 10);
 }
 
 function toIsoDateTime(value: string) {
-  const date = new Date(`${value}T00:00:00`);
+  // A date input represents a calendar day, not a moment in the user's local
+  // timezone. UTC midnight preserves exactly the YYYY-MM-DD that was chosen.
+  const date = new Date(`${value}T00:00:00.000Z`);
   if (Number.isNaN(date.getTime())) {
     throw new Error("Invalid date format.");
   }
