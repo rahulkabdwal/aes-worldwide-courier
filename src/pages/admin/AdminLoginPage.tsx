@@ -14,6 +14,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { adminSignIn } from "@/features/admin/adminApi";
 import { useAdminAuth } from "@/features/admin/auth/AdminAuthProvider";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabaseClient";
 
 type LoginValues = {
   email: string;
@@ -42,6 +44,7 @@ function validateLogin(values: LoginValues) {
 export default function AdminLoginPage() {
   const [, navigate] = useLocation();
   const { session, loading } = useAdminAuth();
+  const { toast } = useToast();
 
   const [values, setValues] = useState<LoginValues>({
     email: "",
@@ -50,6 +53,7 @@ export default function AdminLoginPage() {
   const [errors, setErrors] = useState<LoginErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   useEffect(() => {
     if (!loading && session) {
@@ -86,6 +90,38 @@ export default function AdminLoginPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const onForgotPassword = async () => {
+    const email = values.email.trim();
+
+    if (!email) {
+      toast({
+        title: "Email required",
+        description: "Please enter your email.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingReset(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://aeswwc.com/reset-password",
+    });
+    setIsSendingReset(false);
+
+    if (error) {
+      toast({
+        title: "Unable to send password reset email",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Password reset email sent. Please check your inbox.",
+    });
   };
 
   if (loading) {
@@ -146,6 +182,16 @@ export default function AdminLoginPage() {
                 <p className="text-xs text-red-600">{errors.password}</p>
               ) : null}
             </div>
+
+            <Button
+              type="button"
+              variant="link"
+              className="h-auto p-0 text-sm"
+              onClick={onForgotPassword}
+              disabled={isSubmitting || isSendingReset}
+            >
+              {isSendingReset ? "Sending reset email..." : "Forgot Password?"}
+            </Button>
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? (

@@ -78,6 +78,8 @@ export interface Database {
           booking_date: string | null;
           estimated_delivery: string | null;
           actual_delivery: string | null;
+          delivery_date: string | null;
+          delivery_time: string | null;
           pieces: number | null;
           weight: number | null;
           service_mode: string | null;
@@ -87,6 +89,7 @@ export interface Database {
           consignee_name: string | null;
           pod_url: string | null;
           created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: string;
@@ -99,6 +102,8 @@ export interface Database {
           booking_date?: string | null;
           estimated_delivery?: string | null;
           actual_delivery?: string | null;
+          delivery_date?: string | null;
+          delivery_time?: string | null;
           pieces?: number | null;
           weight?: number | null;
           service_mode?: string | null;
@@ -108,6 +113,7 @@ export interface Database {
           consignee_name?: string | null;
           pod_url?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Update: {
           id?: string;
@@ -120,6 +126,8 @@ export interface Database {
           booking_date?: string | null;
           estimated_delivery?: string | null;
           actual_delivery?: string | null;
+          delivery_date?: string | null;
+          delivery_time?: string | null;
           pieces?: number | null;
           weight?: number | null;
           service_mode?: string | null;
@@ -129,6 +137,7 @@ export interface Database {
           consignee_name?: string | null;
           pod_url?: string | null;
           created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

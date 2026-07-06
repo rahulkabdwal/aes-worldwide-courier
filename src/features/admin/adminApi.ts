@@ -22,6 +22,7 @@ export const NETWORK_CARRIER_OPTIONS = [
   "FedEx",
   "UPS",
   "Aramex",
+  "TCS",
   "Blue Dart",
   "DTDC",
   "Delhivery",
@@ -167,9 +168,14 @@ export async function getShipmentStats(): Promise<ShipmentStats> {
 }
 
 export async function createShipment(payload: ShipmentInsert): Promise<Shipment> {
+  const activityTimestamp = new Date().toISOString();
   const { data, error } = await supabase
     .from("shipments")
-    .insert(payload)
+    .insert({
+      ...payload,
+      created_at: payload.created_at ?? activityTimestamp,
+      updated_at: payload.updated_at ?? activityTimestamp,
+    })
     .select("*")
     .single();
 
@@ -237,7 +243,10 @@ export async function updateShipment(
 ): Promise<Shipment> {
   const { error } = await supabase
     .from("shipments")
-    .update(payload)
+    .update({
+      ...payload,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", shipmentId);
 
   if (error) {

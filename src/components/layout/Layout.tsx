@@ -165,8 +165,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     Sant Nagar, East of Kailash,<br/>
                     New Delhi-65</li>
               <li>
-                <a href="mailto:aeswwc@gmail.com" className="hover:text-primary-dark">
-                  aeswwc@gmail.com
+                <a href="mailto:info@aeswwc.com" className="hover:text-primary-dark">
+                  info@aeswwc.com
                 </a>
               </li>
               <li>+91 9811371018</li>

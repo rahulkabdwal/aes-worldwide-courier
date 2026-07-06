@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Pencil, RefreshCw, Trash2, X } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { DeliveryDetailsDialog } from "@/components/admin/DeliveryDetailsDialog";
+import { ExpandableFormSection } from "@/components/admin/ExpandableFormSection";
+import { PodUploadPanel } from "@/components/admin/PodUploadPanel";
 import { SmartCityInput } from "@/components/admin/SmartCityInput";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -59,14 +62,6 @@ function digitsOnly(value: string) {
   return value.replace(/\D/g, "");
 }
 
-function decimalNumberOnly(value: string) {
-  const cleaned = value.replace(/[^\d.]/g, "");
-  const [whole, ...decimalParts] = cleaned.split(".");
-  return decimalParts.length > 0
-    ? `${whole}.${decimalParts.join("")}`
-    : whole;
-}
-
 export default function AdminShipmentDetailPage({
   shipmentId,
 }: AdminShipmentDetailPageProps) {
@@ -110,6 +105,10 @@ export default function AdminShipmentDetailPage({
 
   const [isUploadingPod, setIsUploadingPod] = useState(false);
   const [podUploadError, setPodUploadError] = useState<string | null>(null);
+  const [showDeliveryDialog, setShowDeliveryDialog] = useState(false);
+  const [deliveryDialogError, setDeliveryDialogError] = useState<string | null>(null);
+  const [showTrackingEditor, setShowTrackingEditor] = useState(false);
+  const [showPodUpload, setShowPodUpload] = useState(false);
 
   const loadPageData = useCallback(async () => {
     setIsLoading(true);
@@ -148,6 +147,27 @@ export default function AdminShipmentDetailPage({
     setShipmentFormValues((prev) => (prev ? { ...prev, [key]: value } : prev));
     setShipmentFormErrors((prev) => ({ ...prev, [key]: undefined }));
     setShipmentActionError(null);
+
+    if (key === "status") {
+      if (value === "Delivered") {
+        setDeliveryDialogError(null);
+        setShowDeliveryDialog(true);
+      } else {
+        setShowDeliveryDialog(false);
+        setShipmentFormValues((prev) =>
+          prev ? { ...prev, delivery_date: "", delivery_time: "" } : prev,
+        );
+      }
+    }
+  };
+
+  const confirmDeliveryDetails = () => {
+    if (!shipmentFormValues?.delivery_date || !shipmentFormValues.delivery_time) {
+      setDeliveryDialogError("Delivery date and delivery time are required.");
+      return;
+    }
+    setDeliveryDialogError(null);
+    setShowDeliveryDialog(false);
   };
 
   const onShipmentCityValueChange = (
@@ -210,7 +230,9 @@ export default function AdminShipmentDetailPage({
 
     setShipmentActionError(null);
 
-    const validationErrors = validateShipment(shipmentFormValues);
+    const validationErrors = validateShipment(shipmentFormValues, {
+      requireDeliveryDetails: true,
+    });
     setShipmentFormErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) {
       return;
@@ -271,6 +293,7 @@ export default function AdminShipmentDetailPage({
         toast({ title: "Tracking event added successfully" });
         setTrackingEventValues(emptyTrackingEventFormValues);
         setTrackingEventErrors({});
+        setShowTrackingEditor(false);
       }
     } catch (error) {
       const message =
@@ -288,6 +311,7 @@ export default function AdminShipmentDetailPage({
     setTrackingEventValues(trackingEventToFormValues(trackingEvent));
     setTrackingEventErrors({});
     setTrackingActionError(null);
+    setShowTrackingEditor(true);
   };
 
   const cancelTrackingEventEdit = () => {
@@ -295,6 +319,7 @@ export default function AdminShipmentDetailPage({
     setTrackingEventValues(emptyTrackingEventFormValues);
     setTrackingEventErrors({});
     setTrackingActionError(null);
+    setShowTrackingEditor(false);
   };
 
   const handleDeleteTrackingEvent = async (trackingEventId: string) => {
@@ -446,6 +471,12 @@ export default function AdminShipmentDetailPage({
           </div>
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6 md:overflow-visible">
+          {shipment.status === "Delivered" ? (
+            <div className="mb-5 grid grid-cols-2 gap-4 rounded-lg border bg-neutral-50 p-4 text-sm">
+              <div><span className="block text-xs text-neutral-500">Delivery Date</span><span className="font-medium">{shipment.delivery_date ?? "N/A"}</span></div>
+              <div><span className="block text-xs text-neutral-500">Delivery Time</span><span className="font-medium">{shipment.delivery_time?.slice(0, 5) ?? "N/A"}</span></div>
+            </div>
+          ) : null}
           <form className="space-y-4" onSubmit={handleSaveShipment} noValidate>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -479,7 +510,7 @@ export default function AdminShipmentDetailPage({
                     onShipmentFieldChange("status", event.target.value)
                   }
                   disabled={isSavingShipment}
-                  className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                  className="h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm shadow-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:opacity-50"
                 >
                   <option value="">Select status</option>
                   {SHIPMENT_STATUS_OPTIONS.map((status) => (
@@ -520,7 +551,7 @@ export default function AdminShipmentDetailPage({
                     onShipmentFieldChange("service_mode", event.target.value)
                   }
                   disabled={isSavingShipment}
-                  className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                  className="h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm shadow-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:opacity-50"
                 >
                   <option value="">Select service mode</option>
                   {SERVICE_MODE_OPTIONS.map((serviceMode) => (
@@ -545,7 +576,7 @@ export default function AdminShipmentDetailPage({
                     onShipmentFieldChange("network_carrier", event.target.value)
                   }
                   disabled={isSavingShipment}
-                  className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                  className="h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm shadow-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:opacity-50"
                 >
                   {NETWORK_CARRIER_OPTIONS.map((carrier) => (
                     <option key={carrier} value={carrier}>
@@ -630,25 +661,7 @@ export default function AdminShipmentDetailPage({
                 error={shipmentFormErrors.destination_city}
               />
 
-              <div className="space-y-2">
-                <Label htmlFor="detail_estimated_delivery">Estimated Delivery</Label>
-                <Input
-                  id="detail_estimated_delivery"
-                  type="date"
-                  value={shipmentFormValues.estimated_delivery}
-                  onChange={(event) =>
-                    onShipmentFieldChange("estimated_delivery", event.target.value)
-                  }
-                  disabled={isSavingShipment}
-                />
-                {shipmentFormErrors.estimated_delivery ? (
-                  <p className="text-xs text-red-600">
-                    {shipmentFormErrors.estimated_delivery}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="detail_pieces">Pieces</Label>
                 <Input
                   id="detail_pieces"
@@ -662,25 +675,6 @@ export default function AdminShipmentDetailPage({
                 />
                 {shipmentFormErrors.pieces ? (
                   <p className="text-xs text-red-600">{shipmentFormErrors.pieces}</p>
-                ) : null}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="detail_weight">Weight (kg)</Label>
-                <Input
-                  id="detail_weight"
-                  inputMode="decimal"
-                  value={shipmentFormValues.weight}
-                  onChange={(event) =>
-                    onShipmentFieldChange(
-                      "weight",
-                      decimalNumberOnly(event.target.value),
-                    )
-                  }
-                  disabled={isSavingShipment}
-                />
-                {shipmentFormErrors.weight ? (
-                  <p className="text-xs text-red-600">{shipmentFormErrors.weight}</p>
                 ) : null}
               </div>
 
@@ -725,70 +719,22 @@ export default function AdminShipmentDetailPage({
               </div>
             </div>
 
-            <div className="border-t pt-6">
-              <h3 className="text-sm font-semibold mb-4">Proof of Delivery (POD)</h3>
-              
-              {podUploadError && (
-                <div className="mb-4 p-3 rounded-md bg-red-50 text-red-700 text-sm">
-                  {podUploadError}
-                </div>
-              )}
-
-              {shipmentFormValues.pod_url ? (
-                <div className="space-y-3 mb-4">
-                  <p className="text-sm text-neutral-600">
-                    Current POD: <a href={shipmentFormValues.pod_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium">View Document</a>
-                  </p>
-                  <div className="flex gap-2">
-                    <label className="flex-1">
-                      <div className="flex items-center justify-center w-full px-4 py-2 border border-neutral-300 rounded-md cursor-pointer hover:bg-neutral-50 transition-colors">
-                        <span className="text-sm font-medium">Replace POD</span>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePodFileUpload}
-                        disabled={isUploadingPod || isSavingShipment}
-                        className="hidden"
-                      />
-                    </label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleRemovePod}
-                      disabled={isSavingShipment}
-                    >
-                      Remove POD
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="mb-4">
-                  <label className="block">
-                    <div className="flex items-center justify-center w-full px-4 py-8 border-2 border-dashed border-neutral-300 rounded-lg cursor-pointer hover:border-neutral-400 hover:bg-neutral-50 transition-colors">
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-neutral-700">Upload Proof of Delivery</p>
-                        <p className="text-xs text-neutral-500 mt-1">Image or PDF file</p>
-                      </div>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePodFileUpload}
-                      disabled={isUploadingPod || isSavingShipment}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              )}
-
-              {isUploadingPod && (
-                <div className="flex items-center gap-2 text-sm text-neutral-600">
-                  <Spinner className="size-4" />
-                  Uploading...
-                </div>
-              )}
-            </div>
+            <ExpandableFormSection
+              title="Proof of Delivery"
+              actionLabel="Upload POD"
+              open={showPodUpload}
+              onOpenChange={setShowPodUpload}
+              disabled={isSavingShipment}
+            >
+              <PodUploadPanel
+                podUrl={shipmentFormValues.pod_url}
+                error={podUploadError}
+                isUploading={isUploadingPod}
+                disabled={isSavingShipment}
+                onUpload={handlePodFileUpload}
+                onRemove={handleRemovePod}
+              />
+            </ExpandableFormSection>
 
             <div className="sticky bottom-0 -mx-4 flex gap-2 border-t bg-white px-4 py-3 md:static md:mx-0 md:border-t-0 md:px-0 md:py-0">
               <Button type="submit" disabled={isSavingShipment}>
@@ -814,13 +760,44 @@ export default function AdminShipmentDetailPage({
         </CardContent>
       </Card>
 
+      <DeliveryDetailsDialog
+        open={showDeliveryDialog}
+        date={shipmentFormValues.delivery_date}
+        time={shipmentFormValues.delivery_time}
+        error={deliveryDialogError}
+        idPrefix="edit"
+        description="Delivery date and time are required before this shipment can be saved as delivered."
+        onDateChange={(value) => onShipmentFieldChange("delivery_date", value)}
+        onTimeChange={(value) => onShipmentFieldChange("delivery_time", value)}
+        onConfirm={confirmDeliveryDetails}
+        onCancel={() => {
+          setShipmentFormValues((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  status: shipment.status ?? "",
+                  delivery_date: shipment.delivery_date ?? "",
+                  delivery_time: shipment.delivery_time?.slice(0, 5) ?? "",
+                }
+              : prev,
+          );
+          setDeliveryDialogError(null);
+          setShowDeliveryDialog(false);
+        }}
+      />
+
       <Card>
-        <CardHeader>
-          <CardTitle>
-            {isEditingTrackingEvent ? "Edit Tracking Event" : "Add Tracking Event"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 sm:p-6">
+          <ExpandableFormSection
+            title="Initial Tracking Event"
+            actionLabel={isEditingTrackingEvent ? "Edit Tracking Event" : "Add Tracking Event"}
+            open={showTrackingEditor}
+            onOpenChange={(open) => {
+              setShowTrackingEditor(open);
+              if (!open && isEditingTrackingEvent) cancelTrackingEventEdit();
+            }}
+            disabled={isSavingTrackingEvent}
+          >
           <form className="space-y-4" onSubmit={handleSubmitTrackingEvent} noValidate>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -917,6 +894,7 @@ export default function AdminShipmentDetailPage({
               ) : null}
             </div>
           </form>
+          </ExpandableFormSection>
         </CardContent>
       </Card>
 

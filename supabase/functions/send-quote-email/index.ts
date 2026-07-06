@@ -59,7 +59,7 @@ serve(async (req) => {
 
     const { data, error } = await resend.emails.send({
       from: "AES Worldwide Courier <noreply@aeswwc.com>",
-      to: ["aeswwc@gmail.com"],
+      to: ["info@aeswwc.com"],
       subject: "New Quote Request - AES Worldwide Courier",
       html: `
         <h2>New Quote Request - AES Worldwide Courier</h2>

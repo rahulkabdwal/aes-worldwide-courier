@@ -20,9 +20,9 @@ export type ShipmentFormValues = {
   destination_city: string;
   destination_country: string;
   booking_date: string;
-  estimated_delivery: string;
+  delivery_date: string;
+  delivery_time: string;
   pieces: string;
-  weight: string;
   service_mode: string;
   network_carrier: string;
   network_tracking_id: string;
@@ -58,9 +58,9 @@ export const emptyShipmentFormValues: ShipmentFormValues = {
   destination_city: "",
   destination_country: "",
   booking_date: getTodayDateInput(),
-  estimated_delivery: "",
+  delivery_date: "",
+  delivery_time: "",
   pieces: "",
-  weight: "",
   service_mode: "",
   network_carrier: "None",
   network_tracking_id: "",
@@ -173,14 +173,11 @@ export function shipmentToFormValues(shipment: Shipment): ShipmentFormValues {
     destination_city: shipment.destination_city ?? "",
     destination_country: shipment.destination_country ?? "",
     booking_date: toDateTimeLocalInput(shipment.booking_date),
-    estimated_delivery: toDateTimeLocalInput(shipment.estimated_delivery),
+    delivery_date: shipment.delivery_date ?? "",
+    delivery_time: shipment.delivery_time?.slice(0, 5) ?? "",
     pieces:
       typeof shipment.pieces === "number" && Number.isFinite(shipment.pieces)
         ? String(shipment.pieces)
-        : "",
-    weight:
-      typeof shipment.weight === "number" && Number.isFinite(shipment.weight)
-        ? String(shipment.weight)
         : "",
     service_mode: shipment.service_mode ?? "",
     network_carrier: toNetworkCarrierOption(shipment.network_carrier),
@@ -202,7 +199,13 @@ export function trackingEventToFormValues(
   };
 }
 
-export function validateShipment(values: ShipmentFormValues) {
+export function validateShipment(
+  values: ShipmentFormValues,
+  {
+    requireDeliveryDetails = false,
+    requireStatus = false,
+  }: { requireDeliveryDetails?: boolean; requireStatus?: boolean } = {},
+) {
   const errors: ShipmentFormErrors = {};
 
   if (!values.origin_city.trim()) {
@@ -213,7 +216,9 @@ export function validateShipment(values: ShipmentFormValues) {
     errors.destination_city = "City is required";
   }
 
-  if (
+  if (requireStatus && !values.status.trim()) {
+    errors.status = "Status is required.";
+  } else if (
     values.status.trim() &&
     !SHIPMENT_STATUS_OPTIONS.includes(
       values.status.trim() as (typeof SHIPMENT_STATUS_OPTIONS)[number],
@@ -251,27 +256,17 @@ export function validateShipment(values: ShipmentFormValues) {
     }
   }
 
-  if (values.estimated_delivery) {
-    const estimatedDate = new Date(`${values.estimated_delivery}T00:00:00`);
-    if (Number.isNaN(estimatedDate.getTime())) {
-      errors.estimated_delivery = "Estimated delivery has an invalid date.";
+  if (requireDeliveryDetails && values.status === "Delivered") {
+    if (!values.delivery_date) {
+      errors.delivery_date = "Delivery date is required for delivered shipments.";
+    }
+    if (!values.delivery_time) {
+      errors.delivery_time = "Delivery time is required for delivered shipments.";
     }
   }
 
   if (values.pieces.trim() && !/^\d+$/.test(values.pieces.trim())) {
     errors.pieces = "Pieces must contain numbers only.";
-  }
-
-  if (values.weight.trim()) {
-    const normalizedWeight = values.weight.trim();
-    const parsedWeight = Number(normalizedWeight);
-    if (
-      !/^\d+(\.\d+)?$/.test(normalizedWeight) ||
-      !Number.isFinite(parsedWeight) ||
-      parsedWeight < 0
-    ) {
-      errors.weight = "Weight must contain numbers only.";
-    }
   }
 
   return errors;
@@ -299,9 +294,9 @@ export function shipmentFormToInsert(values: ShipmentFormValues): ShipmentInsert
     destination_city: toNullableText(values.destination_city),
     destination_country: toNullableText(values.destination_country),
     booking_date: toNullableIsoDateTime(values.booking_date),
-    estimated_delivery: toNullableIsoDateTime(values.estimated_delivery),
+    delivery_date: values.status === "Delivered" ? toNullableText(values.delivery_date) : null,
+    delivery_time: values.status === "Delivered" ? toNullableText(values.delivery_time) : null,
     pieces: values.pieces.trim() ? Number(values.pieces) : null,
-    weight: values.weight.trim() ? Number(values.weight) : null,
     service_mode: toNullableText(values.service_mode),
     network_carrier: toNullableNetworkCarrier(values.network_carrier),
     network_tracking_id: toNullableText(values.network_tracking_id),
@@ -320,9 +315,9 @@ export function shipmentFormToUpdate(values: ShipmentFormValues): ShipmentUpdate
     destination_city: toNullableText(values.destination_city),
     destination_country: toNullableText(values.destination_country),
     booking_date: toNullableIsoDateTime(values.booking_date),
-    estimated_delivery: toNullableIsoDateTime(values.estimated_delivery),
+    delivery_date: values.status === "Delivered" ? toNullableText(values.delivery_date) : null,
+    delivery_time: values.status === "Delivered" ? toNullableText(values.delivery_time) : null,
     pieces: values.pieces.trim() ? Number(values.pieces) : null,
-    weight: values.weight.trim() ? Number(values.weight) : null,
     service_mode: toNullableText(values.service_mode),
     network_carrier: toNullableNetworkCarrier(values.network_carrier),
     network_tracking_id: toNullableText(values.network_tracking_id),

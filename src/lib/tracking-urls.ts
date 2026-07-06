@@ -1,7 +1,7 @@
 export const getNetworkTrackingUrl = (carrier: string, trackingId: string): string => {
   if (!carrier || !trackingId) return "#";
 
-  const cleanId = trackingId.trim();
+  const cleanId = encodeURIComponent(trackingId.trim());
 
   switch (carrier.toLowerCase()) {
     case 'dhl':
@@ -12,6 +12,17 @@ export const getNetworkTrackingUrl = (carrier: string, trackingId: string): stri
       return `https://www.ups.com/track?tracknum=${cleanId}`;
     case 'aramex':
       return `https://www.aramex.com/track/results?mode=0&ShipmentNumber=${cleanId}`;
+    case 'tcs':
+      return `https://www.tcsexpress.com/track/${cleanId}`;
+    case 'blue dart':
+      return `https://trackcourier.io/track-and-trace/blue-dart-courier/${cleanId}`;
+    case 'dtdc':
+      return `https://trackcourier.io/track-and-trace/dtdc/${cleanId}`;
+    case 'delhivery':
+      return `https://trackcourier.io/track-and-trace/delhivery-courier/${cleanId}`;
+    case 'speed post':
+    case 'india post':
+      return `https://trackcourier.io/track-and-trace/speed-post/${cleanId}`;
     default:
       return "#";
   }

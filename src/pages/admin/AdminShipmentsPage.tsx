@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { Plus, RefreshCw, Trash2 } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { DeliveryDetailsDialog } from "@/components/admin/DeliveryDetailsDialog";
+import { ExpandableFormSection } from "@/components/admin/ExpandableFormSection";
+import { PodUploadPanel } from "@/components/admin/PodUploadPanel";
 import { SmartCityInput } from "@/components/admin/SmartCityInput";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -61,12 +71,50 @@ function digitsOnly(value: string) {
   return value.replace(/\D/g, "");
 }
 
-function decimalNumberOnly(value: string) {
-  const cleaned = value.replace(/[^\d.]/g, "");
-  const [whole, ...decimalParts] = cleaned.split(".");
-  return decimalParts.length > 0
-    ? `${whole}.${decimalParts.join("")}`
-    : whole;
+function formatClockTime(value: string | null) {
+  if (!value) return null;
+  if (
+    /^\d{4}-\d{2}-\d{2}$/.test(value) ||
+    /T00:00:00(?:\.000)?(?:Z|\+00:00)$/.test(value)
+  ) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function formatActivityDate(value: string | null) {
+  if (!value) return "N/A";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Invalid date";
+
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function formatDeliveryTime(value: string | null) {
+  if (!value) return null;
+
+  const [hours = "0", minutes = "0"] = value.split(":");
+  const date = new Date(2000, 0, 1, Number(hours), Number(minutes));
+  return date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function isDeliveredStatus(value: string | null) {
+  return value?.trim().toLowerCase() === "delivered";
 }
 
 function uniqueSortedNames(
@@ -190,6 +238,10 @@ export default function AdminShipmentsPage() {
     useState<TrackingEventFormErrors>({});
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [showInitialTracking, setShowInitialTracking] = useState(false);
+  const [showPodUpload, setShowPodUpload] = useState(false);
+  const [showCreateDeliveryDialog, setShowCreateDeliveryDialog] = useState(false);
+  const [createDeliveryError, setCreateDeliveryError] = useState<string | null>(null);
 
   const [isUploadingPod, setIsUploadingPod] = useState(false);
   const [podUploadError, setPodUploadError] = useState<string | null>(null);
@@ -201,6 +253,11 @@ export default function AdminShipmentsPage() {
   const [updatingStatusShipmentId, setUpdatingStatusShipmentId] = useState<
     string | null
   >(null);
+  const [deliveryStatusShipment, setDeliveryStatusShipment] =
+    useState<Shipment | null>(null);
+  const [quickDeliveryDate, setQuickDeliveryDate] = useState("");
+  const [quickDeliveryTime, setQuickDeliveryTime] = useState("");
+  const [quickDeliveryError, setQuickDeliveryError] = useState<string | null>(null);
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(totalShipments / SHIPMENTS_PAGE_SIZE)),
@@ -298,6 +355,20 @@ export default function AdminShipmentsPage() {
     setCreateValues((prev) => ({ ...prev, [key]: value }));
     setCreateErrors((prev) => ({ ...prev, [key]: undefined }));
     setCreateError(null);
+
+    if (key === "status") {
+      if (value === "Delivered") {
+        setCreateDeliveryError(null);
+        setShowCreateDeliveryDialog(true);
+      } else {
+        setShowCreateDeliveryDialog(false);
+        setCreateValues((prev) => ({
+          ...prev,
+          delivery_date: "",
+          delivery_time: "",
+        }));
+      }
+    }
   };
 
   const handleCreateCityValueChange = (
@@ -353,6 +424,31 @@ export default function AdminShipmentsPage() {
     setCreateTrackingErrors({});
     setCreateError(null);
     setPodUploadError(null);
+    setShowInitialTracking(false);
+    setShowPodUpload(false);
+    setShowCreateDeliveryDialog(false);
+    setCreateDeliveryError(null);
+  };
+
+  const confirmCreateDeliveryDetails = () => {
+    if (!createValues.delivery_date || !createValues.delivery_time) {
+      setCreateDeliveryError("Delivery date and delivery time are required.");
+      return;
+    }
+
+    setCreateDeliveryError(null);
+    setShowCreateDeliveryDialog(false);
+  };
+
+  const cancelCreateDeliveryDetails = () => {
+    setCreateValues((prev) => ({
+      ...prev,
+      status: "",
+      delivery_date: "",
+      delivery_time: "",
+    }));
+    setCreateDeliveryError(null);
+    setShowCreateDeliveryDialog(false);
   };
 
   const handlePodFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -410,8 +506,13 @@ export default function AdminShipmentsPage() {
     event.preventDefault();
     setCreateError(null);
 
-    const validationErrors = validateShipment(createValues);
-    const trackingValidationErrors = validateTrackingEvent(createTrackingValues);
+    const validationErrors = validateShipment(createValues, {
+      requireDeliveryDetails: true,
+      requireStatus: true,
+    });
+    const trackingValidationErrors = showInitialTracking
+      ? validateTrackingEvent(createTrackingValues)
+      : {};
     setCreateErrors(validationErrors);
     setCreateTrackingErrors(trackingValidationErrors);
 
@@ -419,13 +520,21 @@ export default function AdminShipmentsPage() {
       Object.keys(validationErrors).length > 0 ||
       Object.keys(trackingValidationErrors).length > 0
     ) {
+      if (
+        createValues.status === "Delivered" &&
+        (!createValues.delivery_date || !createValues.delivery_time)
+      ) {
+        setCreateDeliveryError("Delivery date and delivery time are required.");
+        setShowCreateDeliveryDialog(true);
+      }
       return;
     }
 
     setIsCreating(true);
     try {
       const shipmentPayload = shipmentFormToInsert(createValues);
-      const hasInitialTrackingStatus = createTrackingValues.event_title.trim().length > 0;
+      const hasInitialTrackingStatus =
+        showInitialTracking && createTrackingValues.event_title.trim().length > 0;
 
       if (hasInitialTrackingStatus) {
         const trackingEventPayload =
@@ -496,11 +605,21 @@ export default function AdminShipmentsPage() {
     const currentStatus = current?.status ?? null;
     if (!current || currentStatus === nextStatus) return;
 
+    if (nextStatus === "Delivered") {
+      setDeliveryStatusShipment(current);
+      setQuickDeliveryDate(current.delivery_date ?? "");
+      setQuickDeliveryTime(current.delivery_time?.slice(0, 5) ?? "");
+      setQuickDeliveryError(null);
+      return;
+    }
+
     setStatusUpdateError(null);
     setUpdatingStatusShipmentId(shipmentId);
     try {
       await updateShipment(shipmentId, {
         status: nextStatus,
+        delivery_date: null,
+        delivery_time: null,
       });
       await Promise.all([loadStats(), loadData(page)]);
     } catch (error) {
@@ -509,6 +628,32 @@ export default function AdminShipmentsPage() {
           ? error.message
           : "Failed to update shipment status.";
       setStatusUpdateError(message);
+    } finally {
+      setUpdatingStatusShipmentId(null);
+    }
+  };
+
+  const handleSaveQuickDelivery = async () => {
+    if (!deliveryStatusShipment) return;
+    if (!quickDeliveryDate || !quickDeliveryTime) {
+      setQuickDeliveryError("Delivery date and delivery time are required.");
+      return;
+    }
+
+    setUpdatingStatusShipmentId(deliveryStatusShipment.id);
+    setStatusUpdateError(null);
+    try {
+      await updateShipment(deliveryStatusShipment.id, {
+        status: "Delivered",
+        delivery_date: quickDeliveryDate,
+        delivery_time: quickDeliveryTime,
+      });
+      setDeliveryStatusShipment(null);
+      await Promise.all([loadStats(), loadData(page)]);
+    } catch (error) {
+      setQuickDeliveryError(
+        error instanceof Error ? error.message : "Failed to update shipment status.",
+      );
     } finally {
       setUpdatingStatusShipmentId(null);
     }
@@ -535,12 +680,11 @@ export default function AdminShipmentsPage() {
           </Button>
           <Button
             type="button"
-            onClick={() => setShowCreateForm((prev) => !prev)}
-            variant={showCreateForm ? "secondary" : "default"}
+            onClick={() => setShowCreateForm(true)}
             className="px-3"
           >
             <Plus className="size-4" />
-            {showCreateForm ? "Hide Form" : "New Shipment"}
+            New Shipment
           </Button>
         </div>
       }
@@ -637,7 +781,7 @@ export default function AdminShipmentsPage() {
                 onChange={(event) =>
                   handleStatusFilterChange(event.target.value as ShipmentStatusFilter)
                 }
-                className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm shadow-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/15"
               >
                 <option value="all">All statuses</option>
                 {SHIPMENT_STATUS_OPTIONS.map((status) => (
@@ -655,7 +799,7 @@ export default function AdminShipmentsPage() {
                 onChange={(event) =>
                   handleSortOrderChange(event.target.value as ShipmentSortOrder)
                 }
-                className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className="h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm shadow-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/15"
               >
                 <option value="newest">Newest first</option>
                 <option value="oldest">Oldest first</option>
@@ -665,23 +809,21 @@ export default function AdminShipmentsPage() {
         </CardContent>
       </Card>
 
-      {showCreateForm ? (
-        <>
-          <button
-            type="button"
-            aria-label="Close create shipment form"
-            className="fixed inset-0 z-40 bg-black/50 md:hidden"
-            onClick={() => setShowCreateForm(false)}
-          />
-          <Card className="fixed inset-x-3 bottom-3 top-3 z-50 flex flex-col overflow-hidden md:static md:z-auto md:block">
+      <Dialog open={showCreateForm} onOpenChange={(open) => {
+        if (!isCreating) setShowCreateForm(open);
+      }}>
+        <DialogContent className="max-h-[calc(100vh-1.5rem)] max-w-4xl gap-0 overflow-hidden p-0 backdrop-blur-sm">
+          <Card className="flex max-h-[calc(100vh-1.5rem)] flex-col overflow-hidden border-0 shadow-none">
           <CardHeader className="shrink-0 px-4 py-4 sm:px-6 sm:py-6">
-            <CardTitle>Create Shipment</CardTitle>
-            <p className="text-sm text-neutral-500">
+            <DialogHeader>
+            <DialogTitle>Create Shipment</DialogTitle>
+            <DialogDescription>
               Origin and destination cities are required. Tracking ID accepts
               numbers only when entered.
-            </p>
+            </DialogDescription>
+            </DialogHeader>
           </CardHeader>
-          <CardContent className="flex-1 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6 md:overflow-visible">
+          <CardContent className="flex-1 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6">
             <form className="space-y-4" onSubmit={handleCreateShipment} noValidate>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -706,15 +848,17 @@ export default function AdminShipmentsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">Status <span className="text-red-600">*</span></Label>
                   <select
                     id="status"
+                    required
+                    aria-invalid={Boolean(createErrors.status)}
                     value={createValues.status}
                     onChange={(event) =>
                       handleCreateValueChange("status", event.target.value)
                     }
                     disabled={isCreating}
-                    className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                    className="h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm shadow-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:opacity-50"
                   >
                     <option value="">Select status</option>
                     {SHIPMENT_STATUS_OPTIONS.map((status) => (
@@ -755,7 +899,7 @@ export default function AdminShipmentsPage() {
                       handleCreateValueChange("service_mode", event.target.value)
                     }
                     disabled={isCreating}
-                    className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                    className="h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm shadow-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:opacity-50"
                   >
                     <option value="">Select service mode</option>
                     {SERVICE_MODE_OPTIONS.map((serviceMode) => (
@@ -780,7 +924,7 @@ export default function AdminShipmentsPage() {
                       handleCreateValueChange("network_carrier", event.target.value)
                     }
                     disabled={isCreating}
-                    className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                    className="h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm shadow-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:opacity-50"
                   >
                     {NETWORK_CARRIER_OPTIONS.map((carrier) => (
                       <option key={carrier} value={carrier}>
@@ -863,28 +1007,7 @@ export default function AdminShipmentsPage() {
                   error={createErrors.destination_city}
                 />
 
-                <div className="space-y-2">
-                  <Label htmlFor="estimated_delivery">Estimated Delivery</Label>
-                  <Input
-                    id="estimated_delivery"
-                    type="date"
-                    value={createValues.estimated_delivery}
-                    onChange={(event) =>
-                      handleCreateValueChange(
-                        "estimated_delivery",
-                        event.target.value,
-                      )
-                    }
-                    disabled={isCreating}
-                  />
-                  {createErrors.estimated_delivery ? (
-                    <p className="text-xs text-red-600">
-                      {createErrors.estimated_delivery}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="pieces">Pieces</Label>
                   <Input
                     id="pieces"
@@ -898,25 +1021,6 @@ export default function AdminShipmentsPage() {
                   />
                   {createErrors.pieces ? (
                     <p className="text-xs text-red-600">{createErrors.pieces}</p>
-                  ) : null}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (kg)</Label>
-                  <Input
-                    id="weight"
-                    inputMode="decimal"
-                    value={createValues.weight}
-                    onChange={(event) =>
-                      handleCreateValueChange(
-                        "weight",
-                        decimalNumberOnly(event.target.value),
-                      )
-                    }
-                    disabled={isCreating}
-                  />
-                  {createErrors.weight ? (
-                    <p className="text-xs text-red-600">{createErrors.weight}</p>
                   ) : null}
                 </div>
 
@@ -947,9 +1051,14 @@ export default function AdminShipmentsPage() {
                 />
               </div>
 
-              <div className="border-t border-neutral-200 pt-4">
-                <h3 className="text-sm font-medium">Initial Tracking Event</h3>
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ExpandableFormSection
+                title="Initial Tracking Event"
+                actionLabel="Add Initial Tracking Event"
+                open={showInitialTracking}
+                onOpenChange={setShowInitialTracking}
+                disabled={isCreating}
+              >
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="initial_event_title">Status</Label>
                     <select
@@ -962,7 +1071,7 @@ export default function AdminShipmentsPage() {
                         )
                       }
                       disabled={isCreating}
-                      className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                      className="h-10 w-full rounded-lg border border-input bg-white px-3 py-2 text-sm shadow-sm focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/15 disabled:opacity-50"
                     >
                       <option value="">Select status</option>
                       {SHIPMENT_STATUS_OPTIONS.map((status) => (
@@ -1039,72 +1148,24 @@ export default function AdminShipmentsPage() {
                     </p>
                   ) : null}
                 </div>
-              </div>
+              </ExpandableFormSection>
 
-              <div className="border-t pt-6">
-                <h3 className="text-sm font-semibold mb-4">Proof of Delivery (POD)</h3>
-                
-                {podUploadError && (
-                  <div className="mb-4 p-3 rounded-md bg-red-50 text-red-700 text-sm">
-                    {podUploadError}
-                  </div>
-                )}
-
-                {createValues.pod_url ? (
-                  <div className="space-y-3 mb-4">
-                    <p className="text-sm text-neutral-600">
-                      Current POD: <a href={createValues.pod_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-medium">View Document</a>
-                    </p>
-                    <div className="flex gap-2">
-                      <label className="flex-1">
-                        <div className="flex items-center justify-center w-full px-4 py-2 border border-neutral-300 rounded-md cursor-pointer hover:bg-neutral-50 transition-colors">
-                          <span className="text-sm font-medium">Replace POD</span>
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handlePodFileUpload}
-                          disabled={isUploadingPod || isCreating}
-                          className="hidden"
-                        />
-                      </label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleRemovePod}
-                        disabled={isCreating}
-                      >
-                        Remove POD
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mb-4">
-                    <label className="block">
-                      <div className="flex items-center justify-center w-full px-4 py-8 border-2 border-dashed border-neutral-300 rounded-lg cursor-pointer hover:border-neutral-400 hover:bg-neutral-50 transition-colors">
-                        <div className="text-center">
-                          <p className="text-sm font-medium text-neutral-700">Upload Proof of Delivery</p>
-                          <p className="text-xs text-neutral-500 mt-1">Image or PDF file</p>
-                        </div>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePodFileUpload}
-                        disabled={isUploadingPod || isCreating}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                )}
-
-                {isUploadingPod && (
-                  <div className="flex items-center gap-2 text-sm text-neutral-600">
-                    <Spinner className="size-4" />
-                    Uploading...
-                  </div>
-                )}
-              </div>
+              <ExpandableFormSection
+                title="Proof of Delivery"
+                actionLabel="Upload POD"
+                open={showPodUpload}
+                onOpenChange={setShowPodUpload}
+                disabled={isCreating}
+              >
+                <PodUploadPanel
+                  podUrl={createValues.pod_url}
+                  error={podUploadError}
+                  isUploading={isUploadingPod}
+                  disabled={isCreating}
+                  onUpload={handlePodFileUpload}
+                  onRemove={handleRemovePod}
+                />
+              </ExpandableFormSection>
 
               <div className="sticky bottom-0 -mx-4 flex items-center gap-2 border-t bg-white px-4 py-3 md:static md:mx-0 md:border-t-0 md:px-0 md:py-0">
                 <Button type="submit" disabled={isCreating}>
@@ -1132,8 +1193,48 @@ export default function AdminShipmentsPage() {
             </form>
           </CardContent>
           </Card>
-        </>
-      ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <DeliveryDetailsDialog
+        open={showCreateDeliveryDialog}
+        date={createValues.delivery_date}
+        time={createValues.delivery_time}
+        error={createDeliveryError}
+        idPrefix="create"
+        title="Complete delivery details"
+        description="Delivery date and time are required before this shipment can be created as delivered."
+        onDateChange={(value) => {
+          setCreateValues((prev) => ({ ...prev, delivery_date: value }));
+          setCreateDeliveryError(null);
+        }}
+        onTimeChange={(value) => {
+          setCreateValues((prev) => ({ ...prev, delivery_time: value }));
+          setCreateDeliveryError(null);
+        }}
+        onConfirm={confirmCreateDeliveryDetails}
+        onCancel={cancelCreateDeliveryDetails}
+      />
+
+      <DeliveryDetailsDialog
+        open={Boolean(deliveryStatusShipment)}
+        date={quickDeliveryDate}
+        time={quickDeliveryTime}
+        error={quickDeliveryError}
+        isSaving={Boolean(updatingStatusShipmentId)}
+        idPrefix="quick"
+        title="Complete delivery details"
+        onDateChange={(value) => {
+          setQuickDeliveryDate(value);
+          setQuickDeliveryError(null);
+        }}
+        onTimeChange={(value) => {
+          setQuickDeliveryTime(value);
+          setQuickDeliveryError(null);
+        }}
+        onConfirm={() => void handleSaveQuickDelivery()}
+        onCancel={() => setDeliveryStatusShipment(null)}
+      />
 
       <Card>
         <CardHeader className="px-4 pb-3 pt-4 sm:px-6 sm:pt-6">
@@ -1151,10 +1252,10 @@ export default function AdminShipmentsPage() {
                 <TableHead>Status (Quick Update)</TableHead>
                 <TableHead>Route</TableHead>
                 <TableHead>Booking</TableHead>
-                <TableHead>Estimated</TableHead>
+                <TableHead>Delivery</TableHead>
                 <TableHead>Service</TableHead>
                 <TableHead>Pieces</TableHead>
-                <TableHead>Weight</TableHead>
+                <TableHead>Last Updated</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -1216,11 +1317,33 @@ export default function AdminShipmentsPage() {
                       {shipment.destination_country ?? "-"}
                     </TableCell>
                     <TableCell>{formatDateTime(shipment.booking_date)}</TableCell>
-                    <TableCell>{formatDateTime(shipment.estimated_delivery)}</TableCell>
+                    <TableCell>
+                      {isDeliveredStatus(shipment.status) && shipment.delivery_date ? (
+                        <span className="leading-tight">
+                          <span className="block font-medium">
+                            {formatDateTime(shipment.delivery_date)}
+                          </span>
+                          <span className="mt-1 block text-xs text-neutral-500">
+                            {formatDeliveryTime(shipment.delivery_time) ?? "Time unavailable"}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-neutral-500">Pending</span>
+                      )}
+                    </TableCell>
                     <TableCell>{shipment.service_mode ?? "N/A"}</TableCell>
                     <TableCell>{shipment.pieces ?? "N/A"}</TableCell>
                     <TableCell>
-                      {shipment.weight == null ? "N/A" : `${shipment.weight} kg`}
+                      <span className="leading-tight">
+                        <span className="block font-medium">
+                          {formatActivityDate(shipment.updated_at ?? shipment.created_at)}
+                        </span>
+                        {formatClockTime(shipment.updated_at ?? shipment.created_at) ? (
+                          <span className="mt-1 block text-xs text-neutral-500">
+                            {formatClockTime(shipment.updated_at ?? shipment.created_at)}
+                          </span>
+                        ) : null}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -1291,16 +1414,28 @@ export default function AdminShipmentsPage() {
                       {formatDateTime(shipment.booking_date)}
                     </div>
                     <div>
-                      <span className="block text-neutral-400">Estimated</span>
-                      {formatDateTime(shipment.estimated_delivery)}
+                      <span className="block text-neutral-400">Delivery</span>
+                      {isDeliveredStatus(shipment.status) && shipment.delivery_date ? (
+                        <>
+                          {formatDateTime(shipment.delivery_date)}
+                          <span className="block text-neutral-500">
+                            {formatDeliveryTime(shipment.delivery_time)}
+                          </span>
+                        </>
+                      ) : (
+                        "Pending"
+                      )}
                     </div>
                     <div>
                       <span className="block text-neutral-400">Service</span>
                       {shipment.service_mode ?? "N/A"}
                     </div>
                     <div>
-                      <span className="block text-neutral-400">Weight</span>
-                      {shipment.weight == null ? "N/A" : `${shipment.weight} kg`}
+                      <span className="block text-neutral-400">Last Updated</span>
+                      {formatActivityDate(shipment.updated_at ?? shipment.created_at)}
+                      <span className="block text-neutral-500">
+                        {formatClockTime(shipment.updated_at ?? shipment.created_at)}
+                      </span>
                     </div>
                   </div>
 

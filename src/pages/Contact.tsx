@@ -204,7 +204,7 @@ console.log("User agent:", navigator.userAgent);
                 </div>
                 <div>
                   <h4 className="font-medium text-lg">Email</h4>
-                  <p className="text-neutral-500">aeswwc@gmail.com</p>
+                  <p className="text-neutral-500">contact@aeswwc.com</p>
                   <p className="text-neutral-500"></p>
                 </div>
               </div>
