@@ -64,11 +64,31 @@ import {
 const initialFormValues = emptyShipmentFormValues;
 const initialTrackingEventValues: TrackingEventFormValues = {
   ...emptyTrackingEventFormValues,
-  event_time: initialFormValues.booking_date,
+  event_time: `${initialFormValues.booking_date}T${
+    emptyTrackingEventFormValues.event_time.split("T")[1] ?? "00:00"
+  }`,
 };
 
 function digitsOnly(value: string) {
   return value.replace(/\D/g, "");
+}
+
+function getEventDate(value: string) {
+  return value.split("T")[0] ?? "";
+}
+
+function getEventTime(value: string) {
+  return value.split("T")[1]?.slice(0, 5) ?? "";
+}
+
+function updateEventDate(value: string, date: string) {
+  const time = getEventTime(value) || "00:00";
+  return date ? `${date}T${time}` : "";
+}
+
+function updateEventTime(value: string, time: string) {
+  const date = getEventDate(value);
+  return date && time ? `${date}T${time}` : date;
 }
 
 function formatClockTime(value: string | null) {
@@ -119,7 +139,7 @@ function isDeliveredStatus(value: string | null) {
 
 function uniqueSortedNames(
   shipments: Shipment[],
-  key: "consignor_name" | "consignee_name",
+  key: "consignee_name",
 ) {
   return Array.from(
     new Set(
@@ -263,10 +283,6 @@ export default function AdminShipmentsPage() {
     () => Math.max(1, Math.ceil(totalShipments / SHIPMENTS_PAGE_SIZE)),
     [totalShipments],
   );
-  const consignorNameOptions = useMemo(
-    () => uniqueSortedNames(shipments, "consignor_name"),
-    [shipments],
-  );
   const consigneeNameOptions = useMemo(
     () => uniqueSortedNames(shipments, "consignee_name"),
     [shipments],
@@ -346,9 +362,12 @@ export default function AdminShipmentsPage() {
   ) => {
     if (
       key === "booking_date" &&
-      createTrackingValues.event_time === createValues.booking_date
+      getEventDate(createTrackingValues.event_time) === createValues.booking_date
     ) {
-      setCreateTrackingValues((prev) => ({ ...prev, event_time: value }));
+      setCreateTrackingValues((prev) => ({
+        ...prev,
+        event_time: updateEventDate(prev.event_time, value),
+      }));
       setCreateTrackingErrors((prev) => ({ ...prev, event_time: undefined }));
     }
 
@@ -372,8 +391,8 @@ export default function AdminShipmentsPage() {
   };
 
   const handleCreateCityValueChange = (
-    cityKey: "origin_city" | "destination_city",
-    countryKey: "origin_country" | "destination_country",
+    cityKey: "destination_city",
+    countryKey: "destination_country",
     value: string,
   ) => {
     setCreateValues((prev) => ({
@@ -390,8 +409,8 @@ export default function AdminShipmentsPage() {
   };
 
   const handleCreateCitySuggestionSelect = (
-    cityKey: "origin_city" | "destination_city",
-    countryKey: "origin_country" | "destination_country",
+    cityKey: "destination_city",
+    countryKey: "destination_country",
     city: string,
     country: string,
   ) => {
@@ -818,8 +837,8 @@ export default function AdminShipmentsPage() {
             <DialogHeader>
             <DialogTitle>Create Shipment</DialogTitle>
             <DialogDescription>
-              Origin and destination cities are required. Tracking ID accepts
-              numbers only when entered.
+              Destination city is required. Tracking ID accepts numbers only
+              when entered.
             </DialogDescription>
             </DialogHeader>
           </CardHeader>
@@ -960,30 +979,6 @@ export default function AdminShipmentsPage() {
                 </div>
 
                 <SmartCityInput
-                  id="origin_city"
-                  label="Origin City"
-                  value={createValues.origin_city}
-                  onChange={(value) =>
-                    handleCreateCityValueChange(
-                      "origin_city",
-                      "origin_country",
-                      value,
-                    )
-                  }
-                  onSuggestionSelect={(city, country) =>
-                    handleCreateCitySuggestionSelect(
-                      "origin_city",
-                      "origin_country",
-                      city,
-                      country,
-                    )
-                  }
-                  disabled={isCreating}
-                  placeholder="Enter origin city"
-                  error={createErrors.origin_city}
-                />
-
-                <SmartCityInput
                   id="destination_city"
                   label="Destination City"
                   value={createValues.destination_city}
@@ -1007,48 +1002,20 @@ export default function AdminShipmentsPage() {
                   error={createErrors.destination_city}
                 />
 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="pieces">Pieces</Label>
-                  <Input
-                    id="pieces"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={createValues.pieces}
-                    onChange={(event) =>
-                      handleCreateValueChange("pieces", digitsOnly(event.target.value))
+                <div className="md:col-span-2">
+                  <HistoricalNameInput
+                    id="consignee_name"
+                    label="Consignee Name"
+                    value={createValues.consignee_name}
+                    options={consigneeNameOptions}
+                    onChange={(value) =>
+                      handleCreateValueChange("consignee_name", value)
                     }
                     disabled={isCreating}
+                    placeholder="Enter consignee name"
+                    error={createErrors.consignee_name}
                   />
-                  {createErrors.pieces ? (
-                    <p className="text-xs text-red-600">{createErrors.pieces}</p>
-                  ) : null}
                 </div>
-
-                <HistoricalNameInput
-                  id="consignor_name"
-                  label="Consignor Name"
-                  value={createValues.consignor_name}
-                  options={consignorNameOptions}
-                  onChange={(value) =>
-                    handleCreateValueChange("consignor_name", value)
-                  }
-                  disabled={isCreating}
-                  placeholder="Enter consignor name"
-                  error={createErrors.consignor_name}
-                />
-
-                <HistoricalNameInput
-                  id="consignee_name"
-                  label="Consignee Name"
-                  value={createValues.consignee_name}
-                  options={consigneeNameOptions}
-                  onChange={(value) =>
-                    handleCreateValueChange("consignee_name", value)
-                  }
-                  disabled={isCreating}
-                  placeholder="Enter consignee name"
-                  error={createErrors.consignee_name}
-                />
               </div>
 
               <ExpandableFormSection
@@ -1088,15 +1055,37 @@ export default function AdminShipmentsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="initial_event_time">Event Time</Label>
+                    <Label htmlFor="initial_event_date">Event Date</Label>
                     <Input
-                      id="initial_event_time"
+                      id="initial_event_date"
                       type="date"
-                      value={createTrackingValues.event_time}
+                      value={getEventDate(createTrackingValues.event_time)}
                       onChange={(event) =>
                         handleCreateTrackingValueChange(
                           "event_time",
-                          event.target.value,
+                          updateEventDate(
+                            createTrackingValues.event_time,
+                            event.target.value,
+                          ),
+                        )
+                      }
+                      disabled={isCreating}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="initial_event_time">Event Time</Label>
+                    <Input
+                      id="initial_event_time"
+                      type="time"
+                      value={getEventTime(createTrackingValues.event_time)}
+                      onChange={(event) =>
+                        handleCreateTrackingValueChange(
+                          "event_time",
+                          updateEventTime(
+                            createTrackingValues.event_time,
+                            event.target.value,
+                          ),
                         )
                       }
                       disabled={isCreating}
@@ -1108,7 +1097,7 @@ export default function AdminShipmentsPage() {
                     ) : null}
                   </div>
 
-                  <div className="md:col-span-2">
+                  <div>
                     <SmartCityInput
                       id="initial_location_city"
                       label="Location City"
@@ -1237,24 +1226,23 @@ export default function AdminShipmentsPage() {
       />
 
       <Card>
-        <CardHeader className="px-4 pb-3 pt-4 sm:px-6 sm:pt-6">
+        <CardHeader className="px-3 pb-2 pt-3 sm:px-4 sm:pt-4">
           <CardTitle className="text-base sm:text-lg">Shipments</CardTitle>
           <p className="text-sm text-neutral-500">
             Showing {shipments.length} of {totalShipments} matching shipments.
           </p>
         </CardHeader>
-        <CardContent className="space-y-4 px-4 pb-4 sm:px-6 sm:pb-6">
+        <CardContent className="space-y-3 px-3 pb-3 sm:px-4 sm:pb-4">
           <div className="hidden overflow-x-auto md:block">
-          <Table>
+          <Table className="text-xs [&_td]:px-1.5 [&_td]:py-1.5 [&_th]:h-8 [&_th]:px-1.5">
             <TableHeader>
               <TableRow>
                 <TableHead>Tracking ID</TableHead>
                 <TableHead>Status (Quick Update)</TableHead>
-                <TableHead>Route</TableHead>
+                <TableHead>Destination</TableHead>
                 <TableHead>Booking</TableHead>
                 <TableHead>Delivery</TableHead>
                 <TableHead>Service</TableHead>
-                <TableHead>Pieces</TableHead>
                 <TableHead>Last Updated</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -1262,7 +1250,7 @@ export default function AdminShipmentsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9}>
+                  <TableCell colSpan={8}>
                     <div className="flex items-center justify-center gap-2 py-6 text-neutral-500">
                       <Spinner />
                       Loading shipments...
@@ -1271,7 +1259,7 @@ export default function AdminShipmentsPage() {
                 </TableRow>
               ) : shipments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9}>
+                  <TableCell colSpan={8}>
                     <div className="py-6 text-center text-neutral-500">
                       No shipments found.
                     </div>
@@ -1294,7 +1282,7 @@ export default function AdminShipmentsPage() {
                             )
                           }
                           disabled={updatingStatusShipmentId === shipment.id}
-                          className="h-8 min-w-[140px] rounded-md border border-input bg-transparent px-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                          className="h-8 min-w-[128px] rounded-md border border-input bg-transparent px-2 text-xs shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
                         >
                           <option value="">Unknown</option>
                           {SHIPMENT_STATUS_OPTIONS.map((status) => (
@@ -1311,10 +1299,8 @@ export default function AdminShipmentsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {shipment.origin_city ?? "-"}, {shipment.origin_country ?? "-"}
-                      <span className="px-1">-&gt;</span>
-                      {shipment.destination_city ?? "-"},{" "}
-                      {shipment.destination_country ?? "-"}
+                      {shipment.destination_city ?? "-"}
+                      {shipment.destination_country ? `, ${shipment.destination_country}` : ""}
                     </TableCell>
                     <TableCell>{formatDateTime(shipment.booking_date)}</TableCell>
                     <TableCell>
@@ -1323,7 +1309,7 @@ export default function AdminShipmentsPage() {
                           <span className="block font-medium">
                             {formatDateTime(shipment.delivery_date)}
                           </span>
-                          <span className="mt-1 block text-xs text-neutral-500">
+                          <span className="mt-0.5 block text-[11px] text-neutral-500">
                             {formatDeliveryTime(shipment.delivery_time) ?? "Time unavailable"}
                           </span>
                         </span>
@@ -1332,28 +1318,28 @@ export default function AdminShipmentsPage() {
                       )}
                     </TableCell>
                     <TableCell>{shipment.service_mode ?? "N/A"}</TableCell>
-                    <TableCell>{shipment.pieces ?? "N/A"}</TableCell>
                     <TableCell>
                       <span className="leading-tight">
                         <span className="block font-medium">
                           {formatActivityDate(shipment.updated_at ?? shipment.created_at)}
                         </span>
                         {formatClockTime(shipment.updated_at ?? shipment.created_at) ? (
-                          <span className="mt-1 block text-xs text-neutral-500">
+                          <span className="mt-0.5 block text-[11px] text-neutral-500">
                             {formatClockTime(shipment.updated_at ?? shipment.created_at)}
                           </span>
                         ) : null}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button asChild variant="outline" size="sm">
+                      <div className="flex items-center gap-1.5">
+                        <Button asChild variant="outline" size="sm" className="h-8 px-2 text-xs">
                           <Link href={`/admin/shipments/${shipment.id}`}>Edit</Link>
                         </Button>
                         <Button
                           type="button"
                           variant="destructive"
                           size="sm"
+                          className="h-8 px-2 text-xs"
                           onClick={() => void handleDeleteShipment(shipment.id)}
                           disabled={deletingShipmentId === shipment.id}
                         >
@@ -1364,7 +1350,7 @@ export default function AdminShipmentsPage() {
                             </>
                           ) : (
                             <>
-                              <Trash2 className="size-4" />
+                              <Trash2 className="size-3.5" />
                               Delete
                             </>
                           )}
@@ -1400,7 +1386,7 @@ export default function AdminShipmentsPage() {
                         {shipment.tracking_id ?? "N/A"}
                       </p>
                       <p className="mt-1 text-xs text-neutral-500">
-                        {shipment.origin_city ?? "-"} to {shipment.destination_city ?? "-"}
+                        {shipment.destination_city ?? "Destination unavailable"}
                       </p>
                     </div>
                     <Badge variant="outline" className="shrink-0 text-[10px]">

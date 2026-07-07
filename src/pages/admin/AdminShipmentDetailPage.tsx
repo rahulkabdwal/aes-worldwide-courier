@@ -62,6 +62,24 @@ function digitsOnly(value: string) {
   return value.replace(/\D/g, "");
 }
 
+function getEventDate(value: string) {
+  return value.split("T")[0] ?? "";
+}
+
+function getEventTime(value: string) {
+  return value.split("T")[1]?.slice(0, 5) ?? "";
+}
+
+function updateEventDate(value: string, date: string) {
+  const time = getEventTime(value) || "00:00";
+  return date ? `${date}T${time}` : "";
+}
+
+function updateEventTime(value: string, time: string) {
+  const date = getEventDate(value);
+  return date && time ? `${date}T${time}` : date;
+}
+
 export default function AdminShipmentDetailPage({
   shipmentId,
 }: AdminShipmentDetailPageProps) {
@@ -171,8 +189,8 @@ export default function AdminShipmentDetailPage({
   };
 
   const onShipmentCityValueChange = (
-    cityKey: "origin_city" | "destination_city",
-    countryKey: "origin_country" | "destination_country",
+    cityKey: "destination_city",
+    countryKey: "destination_country",
     value: string,
   ) => {
     setShipmentFormValues((prev) =>
@@ -193,8 +211,8 @@ export default function AdminShipmentDetailPage({
   };
 
   const onShipmentCitySuggestionSelect = (
-    cityKey: "origin_city" | "destination_city",
-    countryKey: "origin_country" | "destination_country",
+    cityKey: "destination_city",
+    countryKey: "destination_country",
     city: string,
     country: string,
   ) => {
@@ -614,30 +632,6 @@ export default function AdminShipmentDetailPage({
               </div>
 
               <SmartCityInput
-                id="detail_origin_city"
-                label="Origin City"
-                value={shipmentFormValues.origin_city}
-                onChange={(value) =>
-                  onShipmentCityValueChange(
-                    "origin_city",
-                    "origin_country",
-                    value,
-                  )
-                }
-                onSuggestionSelect={(city, country) =>
-                  onShipmentCitySuggestionSelect(
-                    "origin_city",
-                    "origin_country",
-                    city,
-                    country,
-                  )
-                }
-                disabled={isSavingShipment}
-                placeholder="Enter origin city"
-                error={shipmentFormErrors.origin_city}
-              />
-
-              <SmartCityInput
                 id="detail_destination_city"
                 label="Destination City"
                 value={shipmentFormValues.destination_city}
@@ -662,43 +656,6 @@ export default function AdminShipmentDetailPage({
               />
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="detail_pieces">Pieces</Label>
-                <Input
-                  id="detail_pieces"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={shipmentFormValues.pieces}
-                  onChange={(event) =>
-                    onShipmentFieldChange("pieces", digitsOnly(event.target.value))
-                  }
-                  disabled={isSavingShipment}
-                />
-                {shipmentFormErrors.pieces ? (
-                  <p className="text-xs text-red-600">{shipmentFormErrors.pieces}</p>
-                ) : null}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="detail_consignor_name">Consignor Name</Label>
-                <Input
-                  id="detail_consignor_name"
-                  value={shipmentFormValues.consignor_name}
-                  onChange={(event) =>
-                    onShipmentFieldChange(
-                      "consignor_name",
-                      capitalizeFirstLetter(event.target.value),
-                    )
-                  }
-                  disabled={isSavingShipment}
-                />
-                {shipmentFormErrors.consignor_name ? (
-                  <p className="text-xs text-red-600">
-                    {shipmentFormErrors.consignor_name}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="detail_consignee_name">Consignee Name</Label>
                 <Input
                   id="detail_consignee_name"
@@ -818,13 +775,38 @@ export default function AdminShipmentDetailPage({
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="event_date">Event Date</Label>
+                <Input
+                  id="event_date"
+                  type="date"
+                  value={getEventDate(trackingEventValues.event_time)}
+                  onChange={(event) =>
+                    onTrackingEventFieldChange(
+                      "event_time",
+                      updateEventDate(
+                        trackingEventValues.event_time,
+                        event.target.value,
+                      ),
+                    )
+                  }
+                  disabled={isSavingTrackingEvent}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="event_time">Event Time</Label>
                 <Input
                   id="event_time"
-                  type="date"
-                  value={trackingEventValues.event_time}
+                  type="time"
+                  value={getEventTime(trackingEventValues.event_time)}
                   onChange={(event) =>
-                    onTrackingEventFieldChange("event_time", event.target.value)
+                    onTrackingEventFieldChange(
+                      "event_time",
+                      updateEventTime(
+                        trackingEventValues.event_time,
+                        event.target.value,
+                      ),
+                    )
                   }
                   disabled={isSavingTrackingEvent}
                 />

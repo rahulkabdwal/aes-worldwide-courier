@@ -15,18 +15,14 @@ import {
 export type ShipmentFormValues = {
   tracking_id: string;
   status: string;
-  origin_city: string;
-  origin_country: string;
   destination_city: string;
   destination_country: string;
   booking_date: string;
   delivery_date: string;
   delivery_time: string;
-  pieces: string;
   service_mode: string;
   network_carrier: string;
   network_tracking_id: string;
-  consignor_name: string;
   consignee_name: string;
   pod_url: string;
 };
@@ -50,21 +46,24 @@ function getTodayDateInput() {
   return new Date(now.getTime() - timezoneOffsetMs).toISOString().slice(0, 10);
 }
 
+function getCurrentTimeInput() {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, "0")}:${String(
+    now.getMinutes(),
+  ).padStart(2, "0")}`;
+}
+
 export const emptyShipmentFormValues: ShipmentFormValues = {
   tracking_id: "",
   status: "",
-  origin_city: "",
-  origin_country: "",
   destination_city: "",
   destination_country: "",
   booking_date: getTodayDateInput(),
   delivery_date: "",
   delivery_time: "",
-  pieces: "",
   service_mode: "",
   network_carrier: "None",
   network_tracking_id: "",
-  consignor_name: "",
   consignee_name: "",
   pod_url: "",
 };
@@ -73,7 +72,7 @@ export const emptyTrackingEventFormValues: TrackingEventFormValues = {
   event_title: "",
   event_description: "",
   location_city: "",
-  event_time: "",
+  event_time: `${getTodayDateInput()}T${getCurrentTimeInput()}`,
 };
 
 export function formatDateTime(value: string | null) {
@@ -121,7 +120,34 @@ export function toDateTimeLocalInput(value: string | null) {
   return localDate.toISOString().slice(0, 10);
 }
 
+export function toTrackingDateTimeLocalInput(value: string | null) {
+  if (!value) {
+    return "";
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return `${value}T00:00`;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const timezoneOffsetMs = date.getTimezoneOffset() * 60 * 1000;
+  const localDate = new Date(date.getTime() - timezoneOffsetMs);
+  return localDate.toISOString().slice(0, 16);
+}
+
 function toIsoDateTime(value: string) {
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value)) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      throw new Error("Invalid date format.");
+    }
+    return date.toISOString();
+  }
+
   // A date input represents a calendar day, not a moment in the user's local
   // timezone. UTC midnight preserves exactly the YYYY-MM-DD that was chosen.
   const date = new Date(`${value}T00:00:00.000Z`);
@@ -168,21 +194,14 @@ export function shipmentToFormValues(shipment: Shipment): ShipmentFormValues {
   return {
     tracking_id: shipment.tracking_id ?? "",
     status: shipment.status ?? "",
-    origin_city: shipment.origin_city ?? "",
-    origin_country: shipment.origin_country ?? "",
     destination_city: shipment.destination_city ?? "",
     destination_country: shipment.destination_country ?? "",
     booking_date: toDateTimeLocalInput(shipment.booking_date),
     delivery_date: shipment.delivery_date ?? "",
     delivery_time: shipment.delivery_time?.slice(0, 5) ?? "",
-    pieces:
-      typeof shipment.pieces === "number" && Number.isFinite(shipment.pieces)
-        ? String(shipment.pieces)
-        : "",
     service_mode: shipment.service_mode ?? "",
     network_carrier: toNetworkCarrierOption(shipment.network_carrier),
     network_tracking_id: shipment.network_tracking_id ?? "",
-    consignor_name: shipment.consignor_name ?? "",
     consignee_name: shipment.consignee_name ?? "",
     pod_url: shipment.pod_url ?? "",
   };
@@ -195,7 +214,7 @@ export function trackingEventToFormValues(
     event_title: trackingEvent.event_title ?? "",
     event_description: trackingEvent.event_description ?? "",
     location_city: capitalizeFirstLetter(trackingEvent.location_city),
-    event_time: toDateTimeLocalInput(trackingEvent.event_time),
+    event_time: toTrackingDateTimeLocalInput(trackingEvent.event_time),
   };
 }
 
@@ -207,10 +226,6 @@ export function validateShipment(
   }: { requireDeliveryDetails?: boolean; requireStatus?: boolean } = {},
 ) {
   const errors: ShipmentFormErrors = {};
-
-  if (!values.origin_city.trim()) {
-    errors.origin_city = "City is required";
-  }
 
   if (!values.destination_city.trim()) {
     errors.destination_city = "City is required";
@@ -265,10 +280,6 @@ export function validateShipment(
     }
   }
 
-  if (values.pieces.trim() && !/^\d+$/.test(values.pieces.trim())) {
-    errors.pieces = "Pieces must contain numbers only.";
-  }
-
   return errors;
 }
 
@@ -276,9 +287,9 @@ export function validateTrackingEvent(values: TrackingEventFormValues) {
   const errors: TrackingEventFormErrors = {};
 
   if (values.event_time) {
-    const eventDate = new Date(`${values.event_time}T00:00:00`);
+    const eventDate = new Date(values.event_time);
     if (Number.isNaN(eventDate.getTime())) {
-      errors.event_time = "Event time has an invalid date.";
+      errors.event_time = "Event date/time is invalid.";
     }
   }
 
@@ -289,18 +300,14 @@ export function shipmentFormToInsert(values: ShipmentFormValues): ShipmentInsert
   return {
     tracking_id: toNullableText(values.tracking_id),
     status: toNullableText(values.status),
-    origin_city: toNullableText(values.origin_city),
-    origin_country: toNullableText(values.origin_country),
     destination_city: toNullableText(values.destination_city),
     destination_country: toNullableText(values.destination_country),
     booking_date: toNullableIsoDateTime(values.booking_date),
     delivery_date: values.status === "Delivered" ? toNullableText(values.delivery_date) : null,
     delivery_time: values.status === "Delivered" ? toNullableText(values.delivery_time) : null,
-    pieces: values.pieces.trim() ? Number(values.pieces) : null,
     service_mode: toNullableText(values.service_mode),
     network_carrier: toNullableNetworkCarrier(values.network_carrier),
     network_tracking_id: toNullableText(values.network_tracking_id),
-    consignor_name: toNullableText(capitalizeFirstLetter(values.consignor_name)),
     consignee_name: toNullableText(capitalizeFirstLetter(values.consignee_name)),
     pod_url: toNullableText(values.pod_url),
   };
@@ -310,18 +317,14 @@ export function shipmentFormToUpdate(values: ShipmentFormValues): ShipmentUpdate
   return {
     tracking_id: toNullableText(values.tracking_id),
     status: toNullableText(values.status),
-    origin_city: toNullableText(values.origin_city),
-    origin_country: toNullableText(values.origin_country),
     destination_city: toNullableText(values.destination_city),
     destination_country: toNullableText(values.destination_country),
     booking_date: toNullableIsoDateTime(values.booking_date),
     delivery_date: values.status === "Delivered" ? toNullableText(values.delivery_date) : null,
     delivery_time: values.status === "Delivered" ? toNullableText(values.delivery_time) : null,
-    pieces: values.pieces.trim() ? Number(values.pieces) : null,
     service_mode: toNullableText(values.service_mode),
     network_carrier: toNullableNetworkCarrier(values.network_carrier),
     network_tracking_id: toNullableText(values.network_tracking_id),
-    consignor_name: toNullableText(capitalizeFirstLetter(values.consignor_name)),
     consignee_name: toNullableText(capitalizeFirstLetter(values.consignee_name)),
     pod_url: toNullableText(values.pod_url),
   };

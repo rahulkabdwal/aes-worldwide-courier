@@ -26,8 +26,6 @@ const serviceOptions = [
 const formSchema = z
   .object({
     shipment_type: z.enum(["Domestic", "International"]),
-    origin_city: z.string().min(1, "Origin city is required"),
-    origin_country: z.string().optional(),
     destination_city: z.string().min(1, "Destination city is required"),
     destination_country: z.string().optional(),
     service_required: z.enum(serviceOptions),
@@ -43,14 +41,6 @@ const formSchema = z
   .superRefine((values, ctx) => {
     if (values.shipment_type !== "International") {
       return;
-    }
-
-    if (!values.origin_country?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Origin country is required",
-        path: ["origin_country"],
-      });
     }
 
     if (!values.destination_country?.trim()) {
@@ -72,8 +62,6 @@ export default function Contact() {
       name: "",
       email: "",
       shipment_type: "Domestic",
-      origin_city: "",
-      origin_country: "",
       destination_city: "",
       destination_country: "",
       service_required: "Next Flight Out (NFO)",
@@ -89,13 +77,12 @@ export default function Contact() {
     const stepFields: Array<keyof z.infer<typeof formSchema>> = [
       "shipment_type",
       "service_required",
-      "origin_city",
       "destination_city",
       "approximate_weight",
     ];
 
     if (shipmentType === "International") {
-      stepFields.push("origin_country", "destination_country");
+      stepFields.push("destination_country");
     }
 
     const isValid = await form.trigger(stepFields);
@@ -121,9 +108,8 @@ console.log("User agent:", navigator.userAgent);
           phone: values.phone,
           preferred_contact: values.preferred_contact_method.toLowerCase(),
           shipment_type: values.shipment_type.toLowerCase(),
-          origin_city: values.origin_city,
-          origin_country:
-            values.shipment_type === "International" ? values.origin_country || null : null,
+          origin_city: null,
+          origin_country: null,
           destination_city: values.destination_city,
           destination_country:
             values.shipment_type === "International" ? values.destination_country || null : null,
@@ -145,9 +131,8 @@ console.log("User agent:", navigator.userAgent);
           phone: values.phone,
           preferred_contact: values.preferred_contact_method,
           shipment_type: values.shipment_type,
-          origin_city: values.origin_city,
-          origin_country:
-            values.shipment_type === "International" ? values.origin_country || null : null,
+          origin_city: null,
+          origin_country: null,
           destination_city: values.destination_city,
           destination_country:
             values.shipment_type === "International" ? values.destination_country || null : null,
@@ -342,20 +327,7 @@ console.log("User agent:", navigator.userAgent);
                         )}
                       />
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="origin_city"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-neutral-500">Origin City *</FormLabel>
-                              <FormControl>
-                                <Input placeholder="New Delhi" {...field} className="bg-neutral-50 border-neutral-200 focus:bg-white transition-all py-6 rounded-xl" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                      <div className="grid grid-cols-1 gap-6">
                         <FormField
                           control={form.control}
                           name="destination_city"
@@ -372,20 +344,7 @@ console.log("User agent:", navigator.userAgent);
                       </div>
 
                       {shipmentType === "International" && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-1 duration-200">
-                          <FormField
-                            control={form.control}
-                            name="origin_country"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-neutral-500">Origin Country *</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="India" {...field} className="bg-neutral-50 border-neutral-200 focus:bg-white transition-all py-6 rounded-xl" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                        <div className="grid grid-cols-1 gap-6 animate-in fade-in slide-in-from-top-1 duration-200">
                           <FormField
                             control={form.control}
                             name="destination_country"
