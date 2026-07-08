@@ -69,12 +69,12 @@ function InfoTile({
   const LabelIcon = Icon ?? Hash;
 
   return (
-    <div className="rounded-xl border border-neutral-100 bg-neutral-50/70 px-3 py-2">
-      <dt className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-neutral-400">
-        <LabelIcon className="size-3.5 shrink-0 text-primary/70" aria-hidden="true" />
+    <div className="rounded-xl border border-neutral-100 bg-neutral-50/70 px-2.5 py-1.5 [@media(max-height:800px)]:py-1.5">
+      <dt className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-neutral-400">
+        <LabelIcon className="size-3 shrink-0 text-primary/70" aria-hidden="true" />
         <span>{label}</span>
       </dt>
-      <dd className="mt-1 break-words text-sm font-semibold leading-5 text-neutral-900">
+      <dd className="mt-0.5 break-words text-sm font-semibold leading-5 text-neutral-900">
         {children}
       </dd>
     </div>
@@ -168,9 +168,9 @@ export default function Tracking() {
   return (
     <Layout>
       <div className="min-h-[80vh] bg-neutral-50/50">
-        <div className="bg-white border-b border-neutral-200 py-5 px-4 shadow-sm md:px-6 md:py-7 relative z-10">
-          <div className="max-w-3xl mx-auto text-center space-y-3 md:space-y-4">
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+        <div className="bg-white border-b border-neutral-200 px-4 py-4 shadow-sm md:px-6 md:py-5 [@media(max-height:800px)]:py-3 relative z-10">
+          <div className="max-w-3xl mx-auto text-center space-y-2.5 md:space-y-3 [@media(max-height:800px)]:space-y-2">
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight [@media(max-height:800px)]:text-2xl">
               Track your shipment
             </h1>
             <form onSubmit={handleSearch} className="relative max-w-lg mx-auto">
@@ -181,13 +181,13 @@ export default function Tracking() {
                 onChange={(e) => setTrackingId(e.target.value.replace(/\D/g, ""))}
                 inputMode="numeric"
                 pattern="[0-9]*"
-                className="w-full pl-10 md:pl-12 pr-24 md:pr-28 py-3 rounded-xl border border-neutral-200 bg-neutral-50 focus:bg-white focus:ring-2 focus:ring-primary/15 focus:border-primary outline-none transition-all font-mono text-sm md:text-base shadow-sm placeholder:text-sm md:placeholder:text-base"
+                className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-2.5 pl-10 pr-24 font-mono text-sm shadow-sm outline-none transition-all placeholder:text-sm focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15 md:pl-12 md:pr-28 md:text-base md:placeholder:text-base [@media(max-height:800px)]:py-2"
               />
               <Search className="absolute left-3.5 md:left-4 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 md:w-5 md:h-5" />
               <button
                 type="submit"
                 disabled={!trackingId.trim() || isSearching}
-                className="absolute right-2 top-2 bottom-2 bg-black text-white px-4 md:px-6 rounded-lg font-medium text-xs md:text-sm hover:bg-neutral-800 disabled:opacity-50 transition-colors"
+                className="absolute bottom-1.5 right-1.5 top-1.5 rounded-lg bg-black px-4 text-xs font-medium text-white transition-colors hover:bg-neutral-800 disabled:opacity-50 md:px-5 md:text-sm [@media(max-height:800px)]:bottom-1 [@media(max-height:800px)]:top-1"
               >
                 {isSearching ? "Locating..." : "Track"}
               </button>
@@ -195,42 +195,42 @@ export default function Tracking() {
           </div>
         </div>
 
-        <div className="mx-auto max-w-[700px] px-4 py-5 md:px-5 md:py-7">
+        <div className="mx-auto max-w-[700px] px-4 py-3.5 md:px-5 md:py-4 [@media(min-width:1024px)_and_(max-width:1600px)]:max-w-[640px] [@media(max-height:800px)]:py-3">
           {error ? (
-            <div className="text-center text-red-500 py-8 md:py-10 font-medium text-sm md:text-base">{error}</div>
+            <div className="py-6 text-center text-sm font-medium text-red-500 md:py-8 md:text-base [@media(max-height:800px)]:py-4">{error}</div>
           ) : null}
 
           {!hasSearched ? (
-            <div className="flex flex-col items-center justify-center text-center py-10 md:py-14 text-neutral-400 opacity-50">
-              <MapPin className="w-10 h-10 md:w-12 md:h-12 mb-3 md:mb-4 stroke-1" />
+            <div className="flex flex-col items-center justify-center py-8 text-center text-neutral-400 opacity-50 md:py-10 [@media(max-height:800px)]:py-6">
+              <MapPin className="mb-2.5 h-10 w-10 stroke-1 md:h-12 md:w-12 [@media(max-height:800px)]:mb-2 [@media(max-height:800px)]:size-9" />
               <p className="text-sm md:text-base max-w-xs">Enter a tracking number to view shipment progress.</p>
             </div>
           ) : !shipment ? (
-            <div className="flex flex-col items-center justify-center text-center py-10 md:py-14 text-neutral-400">
-              <MapPin className="w-9 h-9 md:w-10 md:h-10 mb-3 stroke-1" />
+            <div className="flex flex-col items-center justify-center py-8 text-center text-neutral-400 md:py-10 [@media(max-height:800px)]:py-6">
+              <MapPin className="mb-2.5 h-9 w-9 stroke-1 md:h-10 md:w-10 [@media(max-height:800px)]:mb-2" />
               <p className="text-sm md:text-base">No shipment details to display.</p>
             </div>
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
-              <div className="space-y-2.5 md:space-y-3">
-                <section className="rounded-2xl border border-neutral-200 bg-white p-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.05)] md:p-3.5">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-2.5 [@media(max-height:800px)]:space-y-2">
+                <section className="rounded-2xl border border-neutral-200 bg-white p-3 shadow-[0_10px_28px_rgba(15,23,42,0.05)] md:p-3 [@media(max-height:800px)]:p-2.5">
+                  <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between [@media(max-height:800px)]:gap-2">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Tracking ID</p>
-                      <div className="mt-1 flex items-center gap-2">
-                        <Hash className="size-4 shrink-0 text-neutral-400" aria-hidden="true" />
-                        <h2 className="truncate font-mono text-lg font-bold tracking-tight text-neutral-950 md:text-xl">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-primary">Tracking ID</p>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <Hash className="size-3.5 shrink-0 text-neutral-400" aria-hidden="true" />
+                        <h2 className="truncate font-mono text-lg font-bold tracking-tight text-neutral-950 md:text-lg">
                           {shipment.tracking_id ?? "N/A"}
                         </h2>
                       </div>
                     </div>
-                    <span className={`w-fit rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${isDelivered ? "border-green-100 bg-green-50 text-green-700" : "border-orange-100 bg-orange-50 text-primary-dark"}`}>
+                    <span className={`w-fit rounded-full border px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${isDelivered ? "border-green-100 bg-green-50 text-green-700" : "border-orange-100 bg-orange-50 text-primary-dark"}`}>
                       {shipment.status ?? "Unknown"}
                     </span>
                   </div>
 
                   {hasNetworkTracking && networkTrackingUrl !== "#" ? (
-                    <div className="mt-2.5 flex items-center gap-2.5 rounded-xl border border-orange-100 bg-orange-50/60 px-3 py-2 text-xs text-neutral-800 md:text-sm">
+                    <div className="mt-2 flex items-center gap-2 rounded-xl border border-orange-100 bg-orange-50/60 px-2.5 py-1.5 text-xs text-neutral-800 md:text-sm [@media(max-height:800px)]:mt-1.5 [@media(max-height:800px)]:py-1.5">
                       <Network className="size-4 shrink-0 text-primary" aria-hidden="true" />
                       <span className="min-w-0">
                         <span className="font-semibold">Forwarded via {networkCarrier}: </span>
@@ -242,15 +242,15 @@ export default function Tracking() {
                   ) : null}
 
                   {canShowProofOfDelivery ? (
-                    <a href={shipment.pod_url ?? undefined} target="_blank" rel="noopener noreferrer" className="mt-2.5 inline-flex items-center gap-2 rounded-lg border border-green-100 bg-green-50 px-3 py-2 text-xs font-semibold text-green-900 transition-colors hover:text-green-700">
-                      <FileCheck2 className="size-4" aria-hidden="true" />
+                    <a href={shipment.pod_url ?? undefined} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-2 rounded-lg border border-green-100 bg-green-50 px-2.5 py-1.5 text-xs font-semibold text-green-900 transition-colors hover:text-green-700 [@media(max-height:800px)]:mt-1.5">
+                      <FileCheck2 className="size-3.5" aria-hidden="true" />
                       View Proof of Delivery
                     </a>
                   ) : null}
                 </section>
 
-                <section className="rounded-2xl border border-neutral-200 bg-white p-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)] md:p-3.5">
-                  <dl className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                <section className="rounded-2xl border border-neutral-200 bg-white p-3 shadow-[0_10px_28px_rgba(15,23,42,0.04)] md:p-3 [@media(max-height:800px)]:p-2.5">
+                  <dl className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 [@media(max-height:800px)]:gap-1.5">
                     <InfoTile label="Booking Date" icon={CalendarDays}>{formatDate(shipment.booking_date)}</InfoTile>
                     <InfoTile label="Destination" icon={Navigation}>{[shipment.destination_city, shipment.destination_country].filter(Boolean).join(", ") || "N/A"}</InfoTile>
                     <InfoTile label="Service Mode" icon={Truck}>{shipment.service_mode ?? "N/A"}</InfoTile>
@@ -266,14 +266,14 @@ export default function Tracking() {
                 </section>
 
                 {hasTrackingProgress ? (
-                  <section className="rounded-2xl border border-neutral-200 bg-white p-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)] md:p-3.5">
-                    <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-500">Status Timeline</h3>
+                  <section className="rounded-2xl border border-neutral-200 bg-white p-3 shadow-[0_10px_28px_rgba(15,23,42,0.04)] md:p-3 [@media(max-height:800px)]:p-2.5">
+                    <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-neutral-500">Status Timeline</h3>
                     <ol>
                       {visibleEvents.map((event, index) => (
-                        <li key={event.id} className="relative animate-in fade-in slide-in-from-bottom-1 fill-mode-both pb-2.5 pl-5 last:pb-0" style={{ animationDelay: `${Math.min(index * 50, 200)}ms` }}>
+                        <li key={event.id} className="relative animate-in fade-in slide-in-from-bottom-1 fill-mode-both pb-2 pl-5 last:pb-0 [@media(max-height:800px)]:pb-1.5" style={{ animationDelay: `${Math.min(index * 50, 200)}ms` }}>
                           {index < visibleEvents.length - 1 ? <span className="absolute bottom-0 left-[5px] top-2.5 w-px bg-neutral-200" aria-hidden="true" /> : null}
-                          <span className={`absolute left-0 top-1 size-[11px] rounded-full border-[3px] border-white shadow-sm ${index === 0 ? "bg-primary" : "bg-neutral-400"}`} aria-hidden="true" />
-                          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                          <span className={`absolute left-0 top-1 size-2.5 rounded-full border-[3px] border-white shadow-sm ${index === 0 ? "bg-primary" : "bg-neutral-400"}`} aria-hidden="true" />
+                          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                             <div className="min-w-0">
                               <h4 className="text-sm font-semibold leading-5 text-neutral-900">{event.event_title}</h4>
                               {event.location_city?.trim() ? <p className="mt-0.5 flex items-center gap-1 text-xs text-neutral-500"><MapPin className="size-3" aria-hidden="true" />{formatLocation(event.location_city)}</p> : null}
