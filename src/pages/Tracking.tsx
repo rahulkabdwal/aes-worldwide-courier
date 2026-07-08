@@ -195,7 +195,7 @@ export default function Tracking() {
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-5 md:py-7">
+        <div className="mx-auto max-w-[700px] px-4 py-5 md:px-5 md:py-7">
           {error ? (
             <div className="text-center text-red-500 py-8 md:py-10 font-medium text-sm md:text-base">{error}</div>
           ) : null}
@@ -213,7 +213,7 @@ export default function Tracking() {
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
               <div className="space-y-2.5 md:space-y-3">
-                <section className="rounded-2xl border border-neutral-200 bg-white p-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.05)] md:p-4">
+                <section className="rounded-2xl border border-neutral-200 bg-white p-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.05)] md:p-3.5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Tracking ID</p>
@@ -249,8 +249,8 @@ export default function Tracking() {
                   ) : null}
                 </section>
 
-                <section className="rounded-2xl border border-neutral-200 bg-white p-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)] md:p-4">
-                  <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <section className="rounded-2xl border border-neutral-200 bg-white p-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)] md:p-3.5">
+                  <dl className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                     <InfoTile label="Booking Date" icon={CalendarDays}>{formatDate(shipment.booking_date)}</InfoTile>
                     <InfoTile label="Destination" icon={Navigation}>{[shipment.destination_city, shipment.destination_country].filter(Boolean).join(", ") || "N/A"}</InfoTile>
                     <InfoTile label="Service Mode" icon={Truck}>{shipment.service_mode ?? "N/A"}</InfoTile>
@@ -266,7 +266,7 @@ export default function Tracking() {
                 </section>
 
                 {hasTrackingProgress ? (
-                  <section className="rounded-2xl border border-neutral-200 bg-white p-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)] md:p-4">
+                  <section className="rounded-2xl border border-neutral-200 bg-white p-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)] md:p-3.5">
                     <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-500">Status Timeline</h3>
                     <ol>
                       {visibleEvents.map((event, index) => (
