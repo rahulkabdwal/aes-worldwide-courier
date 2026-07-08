@@ -24,6 +24,7 @@ export type ShipmentFormValues = {
   network_carrier: string;
   network_tracking_id: string;
   consignee_name: string;
+  receiver_name: string;
   pod_url: string;
 };
 
@@ -65,6 +66,7 @@ export const emptyShipmentFormValues: ShipmentFormValues = {
   network_carrier: "None",
   network_tracking_id: "",
   consignee_name: "",
+  receiver_name: "",
   pod_url: "",
 };
 
@@ -190,6 +192,22 @@ export function capitalizeFirstLetter(value: string | null | undefined) {
   return trimmedStart.charAt(0).toUpperCase() + trimmedStart.slice(1);
 }
 
+export function getDeliveryDateTimeInput(date: string, time: string) {
+  if (!date || !time) {
+    return "";
+  }
+
+  return `${date}T${time.slice(0, 5)}`;
+}
+
+export function splitDeliveryDateTimeInput(value: string) {
+  const [date = "", time = ""] = value.split("T");
+  return {
+    delivery_date: date,
+    delivery_time: time.slice(0, 5),
+  };
+}
+
 export function shipmentToFormValues(shipment: Shipment): ShipmentFormValues {
   return {
     tracking_id: shipment.tracking_id ?? "",
@@ -203,6 +221,7 @@ export function shipmentToFormValues(shipment: Shipment): ShipmentFormValues {
     network_carrier: toNetworkCarrierOption(shipment.network_carrier),
     network_tracking_id: shipment.network_tracking_id ?? "",
     consignee_name: shipment.consignee_name ?? "",
+    receiver_name: shipment.receiver_name ?? "",
     pod_url: shipment.pod_url ?? "",
   };
 }
@@ -272,6 +291,9 @@ export function validateShipment(
   }
 
   if (requireDeliveryDetails && values.status === "Delivered") {
+    if (!values.receiver_name.trim()) {
+      errors.receiver_name = "Receiver's name is required for delivered shipments.";
+    }
     if (!values.delivery_date) {
       errors.delivery_date = "Delivery date is required for delivered shipments.";
     }
@@ -303,12 +325,13 @@ export function shipmentFormToInsert(values: ShipmentFormValues): ShipmentInsert
     destination_city: toNullableText(values.destination_city),
     destination_country: toNullableText(values.destination_country),
     booking_date: toNullableIsoDateTime(values.booking_date),
-    delivery_date: values.status === "Delivered" ? toNullableText(values.delivery_date) : null,
-    delivery_time: values.status === "Delivered" ? toNullableText(values.delivery_time) : null,
+    delivery_date: toNullableText(values.delivery_date),
+    delivery_time: toNullableText(values.delivery_time),
     service_mode: toNullableText(values.service_mode),
     network_carrier: toNullableNetworkCarrier(values.network_carrier),
     network_tracking_id: toNullableText(values.network_tracking_id),
     consignee_name: toNullableText(capitalizeFirstLetter(values.consignee_name)),
+    receiver_name: toNullableText(capitalizeFirstLetter(values.receiver_name)),
     pod_url: toNullableText(values.pod_url),
   };
 }
@@ -320,12 +343,13 @@ export function shipmentFormToUpdate(values: ShipmentFormValues): ShipmentUpdate
     destination_city: toNullableText(values.destination_city),
     destination_country: toNullableText(values.destination_country),
     booking_date: toNullableIsoDateTime(values.booking_date),
-    delivery_date: values.status === "Delivered" ? toNullableText(values.delivery_date) : null,
-    delivery_time: values.status === "Delivered" ? toNullableText(values.delivery_time) : null,
+    delivery_date: toNullableText(values.delivery_date),
+    delivery_time: toNullableText(values.delivery_time),
     service_mode: toNullableText(values.service_mode),
     network_carrier: toNullableNetworkCarrier(values.network_carrier),
     network_tracking_id: toNullableText(values.network_tracking_id),
     consignee_name: toNullableText(capitalizeFirstLetter(values.consignee_name)),
+    receiver_name: toNullableText(capitalizeFirstLetter(values.receiver_name)),
     pod_url: toNullableText(values.pod_url),
   };
 }

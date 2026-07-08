@@ -51,7 +51,9 @@ import {
   emptyShipmentFormValues,
   emptyTrackingEventFormValues,
   formatDateTime,
+  getDeliveryDateTimeInput,
   shipmentFormToInsert,
+  splitDeliveryDateTimeInput,
   trackingEventFormToCreatePayload,
   validateTrackingEvent,
   validateShipment,
@@ -226,6 +228,16 @@ type ShipmentStats = {
   delivered: number;
 };
 
+type DeliveryDialogFields = {
+  receiverName: boolean;
+  deliveryDateTime: boolean;
+};
+
+type DeliverySnapshot = Pick<
+  ShipmentFormValues,
+  "status" | "receiver_name" | "delivery_date" | "delivery_time"
+>;
+
 const initialStats: ShipmentStats = {
   total: 0,
   inTransit: 0,
@@ -261,6 +273,10 @@ export default function AdminShipmentsPage() {
   const [showInitialTracking, setShowInitialTracking] = useState(false);
   const [showPodUpload, setShowPodUpload] = useState(false);
   const [showCreateDeliveryDialog, setShowCreateDeliveryDialog] = useState(false);
+  const [createDeliveryDialogFields, setCreateDeliveryDialogFields] =
+    useState<DeliveryDialogFields>({ receiverName: true, deliveryDateTime: true });
+  const [createDeliverySnapshot, setCreateDeliverySnapshot] =
+    useState<DeliverySnapshot | null>(null);
   const [createDeliveryError, setCreateDeliveryError] = useState<string | null>(null);
 
   const [isUploadingPod, setIsUploadingPod] = useState(false);
@@ -275,6 +291,9 @@ export default function AdminShipmentsPage() {
   >(null);
   const [deliveryStatusShipment, setDeliveryStatusShipment] =
     useState<Shipment | null>(null);
+  const [quickDeliveryDialogFields, setQuickDeliveryDialogFields] =
+    useState<DeliveryDialogFields>({ receiverName: true, deliveryDateTime: true });
+  const [quickReceiverName, setQuickReceiverName] = useState("");
   const [quickDeliveryDate, setQuickDeliveryDate] = useState("");
   const [quickDeliveryTime, setQuickDeliveryTime] = useState("");
   const [quickDeliveryError, setQuickDeliveryError] = useState<string | null>(null);
@@ -371,6 +390,8 @@ export default function AdminShipmentsPage() {
       setCreateTrackingErrors((prev) => ({ ...prev, event_time: undefined }));
     }
 
+    const nextValues = { ...createValues, [key]: value };
+
     setCreateValues((prev) => ({ ...prev, [key]: value }));
     setCreateErrors((prev) => ({ ...prev, [key]: undefined }));
     setCreateError(null);
@@ -378,9 +399,23 @@ export default function AdminShipmentsPage() {
     if (key === "status") {
       if (value === "Delivered") {
         setCreateDeliveryError(null);
-        setShowCreateDeliveryDialog(true);
+        const receiverMissing = !nextValues.receiver_name.trim();
+        const deliveryMissing = !nextValues.delivery_date || !nextValues.delivery_time;
+
+        setCreateDeliverySnapshot({
+          status: createValues.status,
+          receiver_name: createValues.receiver_name,
+          delivery_date: createValues.delivery_date,
+          delivery_time: createValues.delivery_time,
+        });
+        setCreateDeliveryDialogFields({
+          receiverName: true,
+          deliveryDateTime: true,
+        });
+        setShowCreateDeliveryDialog(receiverMissing || deliveryMissing);
       } else {
         setShowCreateDeliveryDialog(false);
+        setCreateDeliverySnapshot(null);
         setCreateValues((prev) => ({
           ...prev,
           delivery_date: "",
@@ -446,26 +481,46 @@ export default function AdminShipmentsPage() {
     setShowInitialTracking(false);
     setShowPodUpload(false);
     setShowCreateDeliveryDialog(false);
+    setCreateDeliveryDialogFields({ receiverName: true, deliveryDateTime: true });
+    setCreateDeliverySnapshot(null);
     setCreateDeliveryError(null);
   };
 
   const confirmCreateDeliveryDetails = () => {
-    if (!createValues.delivery_date || !createValues.delivery_time) {
-      setCreateDeliveryError("Delivery date and delivery time are required.");
+    const receiverMissing = !createValues.receiver_name.trim();
+    const deliveryMissing = !createValues.delivery_date || !createValues.delivery_time;
+
+    if (receiverMissing || deliveryMissing) {
+      setCreateDeliveryError(
+        receiverMissing && deliveryMissing
+          ? "Receiver's name and delivery date/time are required."
+          : receiverMissing
+            ? "Receiver's name is required."
+            : "Delivery date and time are required.",
+      );
       return;
     }
 
     setCreateDeliveryError(null);
+    setCreateDeliverySnapshot(null);
     setShowCreateDeliveryDialog(false);
   };
 
   const cancelCreateDeliveryDetails = () => {
-    setCreateValues((prev) => ({
-      ...prev,
-      status: "",
-      delivery_date: "",
-      delivery_time: "",
-    }));
+    if (createDeliverySnapshot) {
+      setCreateValues((prev) => ({
+        ...prev,
+        ...createDeliverySnapshot,
+      }));
+    } else {
+      setCreateValues((prev) => ({
+        ...prev,
+        status: "",
+        delivery_date: "",
+        delivery_time: "",
+      }));
+    }
+    setCreateDeliverySnapshot(null);
     setCreateDeliveryError(null);
     setShowCreateDeliveryDialog(false);
   };
@@ -541,9 +596,12 @@ export default function AdminShipmentsPage() {
     ) {
       if (
         createValues.status === "Delivered" &&
-        (!createValues.delivery_date || !createValues.delivery_time)
+        (!createValues.receiver_name.trim() ||
+          !createValues.delivery_date ||
+          !createValues.delivery_time)
       ) {
-        setCreateDeliveryError("Delivery date and delivery time are required.");
+        setCreateDeliveryError("Receiver's name and delivery date/time are required.");
+        setCreateDeliveryDialogFields({ receiverName: true, deliveryDateTime: true });
         setShowCreateDeliveryDialog(true);
       }
       return;
@@ -625,10 +683,36 @@ export default function AdminShipmentsPage() {
     if (!current || currentStatus === nextStatus) return;
 
     if (nextStatus === "Delivered") {
-      setDeliveryStatusShipment(current);
-      setQuickDeliveryDate(current.delivery_date ?? "");
-      setQuickDeliveryTime(current.delivery_time?.slice(0, 5) ?? "");
-      setQuickDeliveryError(null);
+      const receiverName = current.receiver_name ?? "";
+      const deliveryDate = current.delivery_date ?? "";
+      const deliveryTime = current.delivery_time?.slice(0, 5) ?? "";
+
+      if (receiverName.trim() && deliveryDate && deliveryTime) {
+        setStatusUpdateError(null);
+        setUpdatingStatusShipmentId(shipmentId);
+        try {
+          await updateShipment(shipmentId, { status: "Delivered" });
+          await Promise.all([loadStats(), loadData(page)]);
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Failed to update shipment status.";
+          setStatusUpdateError(message);
+        } finally {
+          setUpdatingStatusShipmentId(null);
+        }
+      } else {
+        setDeliveryStatusShipment(current);
+        setQuickDeliveryDialogFields({
+          receiverName: true,
+          deliveryDateTime: true,
+        });
+        setQuickReceiverName(receiverName);
+        setQuickDeliveryDate(deliveryDate);
+        setQuickDeliveryTime(deliveryTime);
+        setQuickDeliveryError(null);
+      }
       return;
     }
 
@@ -654,8 +738,17 @@ export default function AdminShipmentsPage() {
 
   const handleSaveQuickDelivery = async () => {
     if (!deliveryStatusShipment) return;
-    if (!quickDeliveryDate || !quickDeliveryTime) {
-      setQuickDeliveryError("Delivery date and delivery time are required.");
+    const receiverMissing = !quickReceiverName.trim();
+    const deliveryMissing = !quickDeliveryDate || !quickDeliveryTime;
+
+    if (receiverMissing || deliveryMissing) {
+      setQuickDeliveryError(
+        receiverMissing && deliveryMissing
+          ? "Receiver's name and delivery date/time are required."
+          : receiverMissing
+            ? "Receiver's name is required."
+            : "Delivery date and time are required.",
+      );
       return;
     }
 
@@ -664,10 +757,12 @@ export default function AdminShipmentsPage() {
     try {
       await updateShipment(deliveryStatusShipment.id, {
         status: "Delivered",
+        receiver_name: capitalizeFirstLetter(quickReceiverName),
         delivery_date: quickDeliveryDate,
         delivery_time: quickDeliveryTime,
       });
       setDeliveryStatusShipment(null);
+      setQuickDeliveryDialogFields({ receiverName: true, deliveryDateTime: true });
       await Promise.all([loadStats(), loadData(page)]);
     } catch (error) {
       setQuickDeliveryError(
@@ -1002,7 +1097,7 @@ export default function AdminShipmentsPage() {
                   error={createErrors.destination_city}
                 />
 
-                <div className="md:col-span-2">
+                <div>
                   <HistoricalNameInput
                     id="consignee_name"
                     label="Consignee Name"
@@ -1015,6 +1110,70 @@ export default function AdminShipmentsPage() {
                     placeholder="Enter consignee name"
                     error={createErrors.consignee_name}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="receiver_name">
+                    Receiver's Name
+                    {createValues.status === "Delivered" ? (
+                      <span className="text-red-600"> *</span>
+                    ) : null}
+                  </Label>
+                  <Input
+                    id="receiver_name"
+                    value={createValues.receiver_name}
+                    onChange={(event) =>
+                      handleCreateValueChange(
+                        "receiver_name",
+                        capitalizeFirstLetter(event.target.value),
+                      )
+                    }
+                    disabled={isCreating}
+                    placeholder="Enter receiver's name"
+                  />
+                  {createErrors.receiver_name ? (
+                    <p className="text-xs text-red-600">
+                      {createErrors.receiver_name}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="delivery_datetime">
+                    Delivery Date &amp; Time (Status date and time)
+                    {createValues.status === "Delivered" ? (
+                      <span className="text-red-600"> *</span>
+                    ) : null}
+                  </Label>
+                  <Input
+                    id="delivery_datetime"
+                    type="datetime-local"
+                    value={getDeliveryDateTimeInput(
+                      createValues.delivery_date,
+                      createValues.delivery_time,
+                    )}
+                    onChange={(event) => {
+                      const nextDelivery = splitDeliveryDateTimeInput(
+                        event.target.value,
+                      );
+                      setCreateValues((prev) => ({
+                        ...prev,
+                        ...nextDelivery,
+                      }));
+                      setCreateErrors((prev) => ({
+                        ...prev,
+                        delivery_date: undefined,
+                        delivery_time: undefined,
+                      }));
+                      setCreateError(null);
+                    }}
+                    disabled={isCreating}
+                  />
+                  {createErrors.delivery_date || createErrors.delivery_time ? (
+                    <p className="text-xs text-red-600">
+                      {createErrors.delivery_date ?? createErrors.delivery_time}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 
@@ -1189,16 +1348,26 @@ export default function AdminShipmentsPage() {
         open={showCreateDeliveryDialog}
         date={createValues.delivery_date}
         time={createValues.delivery_time}
+        receiverName={createValues.receiver_name}
         error={createDeliveryError}
         idPrefix="create"
         title="Complete delivery details"
-        description="Delivery date and time are required before this shipment can be created as delivered."
+        description="Complete only the missing delivery information before creating this shipment as delivered."
+        showReceiverName={createDeliveryDialogFields.receiverName}
+        showDeliveryDateTime={createDeliveryDialogFields.deliveryDateTime}
         onDateChange={(value) => {
           setCreateValues((prev) => ({ ...prev, delivery_date: value }));
           setCreateDeliveryError(null);
         }}
         onTimeChange={(value) => {
           setCreateValues((prev) => ({ ...prev, delivery_time: value }));
+          setCreateDeliveryError(null);
+        }}
+        onReceiverNameChange={(value) => {
+          setCreateValues((prev) => ({
+            ...prev,
+            receiver_name: capitalizeFirstLetter(value),
+          }));
           setCreateDeliveryError(null);
         }}
         onConfirm={confirmCreateDeliveryDetails}
@@ -1209,10 +1378,13 @@ export default function AdminShipmentsPage() {
         open={Boolean(deliveryStatusShipment)}
         date={quickDeliveryDate}
         time={quickDeliveryTime}
+        receiverName={quickReceiverName}
         error={quickDeliveryError}
         isSaving={Boolean(updatingStatusShipmentId)}
         idPrefix="quick"
         title="Complete delivery details"
+        showReceiverName={quickDeliveryDialogFields.receiverName}
+        showDeliveryDateTime={quickDeliveryDialogFields.deliveryDateTime}
         onDateChange={(value) => {
           setQuickDeliveryDate(value);
           setQuickDeliveryError(null);
@@ -1221,8 +1393,16 @@ export default function AdminShipmentsPage() {
           setQuickDeliveryTime(value);
           setQuickDeliveryError(null);
         }}
+        onReceiverNameChange={(value) => {
+          setQuickReceiverName(capitalizeFirstLetter(value));
+          setQuickDeliveryError(null);
+        }}
         onConfirm={() => void handleSaveQuickDelivery()}
-        onCancel={() => setDeliveryStatusShipment(null)}
+        onCancel={() => {
+          setDeliveryStatusShipment(null);
+          setQuickDeliveryDialogFields({ receiverName: true, deliveryDateTime: true });
+          setQuickDeliveryError(null);
+        }}
       />
 
       <Card>

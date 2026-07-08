@@ -41,8 +41,10 @@ import {
   capitalizeFirstLetter,
   emptyTrackingEventFormValues,
   formatDateTime,
+  getDeliveryDateTimeInput,
   shipmentFormToUpdate,
   shipmentToFormValues,
+  splitDeliveryDateTimeInput,
   trackingEventFormToInsert,
   trackingEventFormToUpdate,
   trackingEventToFormValues,
@@ -57,6 +59,16 @@ import {
 type AdminShipmentDetailPageProps = {
   shipmentId: string;
 };
+
+type DeliveryDialogFields = {
+  receiverName: boolean;
+  deliveryDateTime: boolean;
+};
+
+type DeliverySnapshot = Pick<
+  ShipmentFormValues,
+  "status" | "receiver_name" | "delivery_date" | "delivery_time"
+>;
 
 function digitsOnly(value: string) {
   return value.replace(/\D/g, "");
@@ -124,6 +136,10 @@ export default function AdminShipmentDetailPage({
   const [isUploadingPod, setIsUploadingPod] = useState(false);
   const [podUploadError, setPodUploadError] = useState<string | null>(null);
   const [showDeliveryDialog, setShowDeliveryDialog] = useState(false);
+  const [deliveryDialogFields, setDeliveryDialogFields] =
+    useState<DeliveryDialogFields>({ receiverName: true, deliveryDateTime: true });
+  const [deliverySnapshot, setDeliverySnapshot] =
+    useState<DeliverySnapshot | null>(null);
   const [deliveryDialogError, setDeliveryDialogError] = useState<string | null>(null);
   const [showTrackingEditor, setShowTrackingEditor] = useState(false);
   const [showPodUpload, setShowPodUpload] = useState(false);
@@ -169,9 +185,28 @@ export default function AdminShipmentDetailPage({
     if (key === "status") {
       if (value === "Delivered") {
         setDeliveryDialogError(null);
-        setShowDeliveryDialog(true);
+        const receiverMissing = !shipmentFormValues?.receiver_name.trim();
+        const deliveryMissing =
+          !shipmentFormValues?.delivery_date || !shipmentFormValues.delivery_time;
+
+        setDeliverySnapshot(
+          shipmentFormValues
+            ? {
+                status: shipmentFormValues.status,
+                receiver_name: shipmentFormValues.receiver_name,
+                delivery_date: shipmentFormValues.delivery_date,
+                delivery_time: shipmentFormValues.delivery_time,
+              }
+            : null,
+        );
+        setDeliveryDialogFields({
+          receiverName: true,
+          deliveryDateTime: true,
+        });
+        setShowDeliveryDialog(receiverMissing || deliveryMissing);
       } else {
         setShowDeliveryDialog(false);
+        setDeliverySnapshot(null);
         setShipmentFormValues((prev) =>
           prev ? { ...prev, delivery_date: "", delivery_time: "" } : prev,
         );
@@ -180,11 +215,22 @@ export default function AdminShipmentDetailPage({
   };
 
   const confirmDeliveryDetails = () => {
-    if (!shipmentFormValues?.delivery_date || !shipmentFormValues.delivery_time) {
-      setDeliveryDialogError("Delivery date and delivery time are required.");
+    const receiverMissing = !shipmentFormValues?.receiver_name.trim();
+    const deliveryMissing =
+      !shipmentFormValues?.delivery_date || !shipmentFormValues.delivery_time;
+
+    if (receiverMissing || deliveryMissing) {
+      setDeliveryDialogError(
+        receiverMissing && deliveryMissing
+          ? "Receiver's name and delivery date/time are required."
+          : receiverMissing
+            ? "Receiver's name is required."
+            : "Delivery date and time are required.",
+      );
       return;
     }
     setDeliveryDialogError(null);
+    setDeliverySnapshot(null);
     setShowDeliveryDialog(false);
   };
 
@@ -253,6 +299,16 @@ export default function AdminShipmentDetailPage({
     });
     setShipmentFormErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) {
+      if (
+        shipmentFormValues.status === "Delivered" &&
+        (!shipmentFormValues.receiver_name.trim() ||
+          !shipmentFormValues.delivery_date ||
+          !shipmentFormValues.delivery_time)
+      ) {
+        setDeliveryDialogError("Receiver's name and delivery date/time are required.");
+        setDeliveryDialogFields({ receiverName: true, deliveryDateTime: true });
+        setShowDeliveryDialog(true);
+      }
       return;
     }
 
@@ -490,7 +546,8 @@ export default function AdminShipmentDetailPage({
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6 md:overflow-visible">
           {shipment.status === "Delivered" ? (
-            <div className="mb-5 grid grid-cols-2 gap-4 rounded-lg border bg-neutral-50 p-4 text-sm">
+            <div className="mb-5 grid grid-cols-1 gap-4 rounded-lg border bg-neutral-50 p-4 text-sm sm:grid-cols-3">
+              <div><span className="block text-xs text-neutral-500">Receiver</span><span className="font-medium">{shipment.receiver_name ?? "N/A"}</span></div>
               <div><span className="block text-xs text-neutral-500">Delivery Date</span><span className="font-medium">{shipment.delivery_date ?? "N/A"}</span></div>
               <div><span className="block text-xs text-neutral-500">Delivery Time</span><span className="font-medium">{shipment.delivery_time?.slice(0, 5) ?? "N/A"}</span></div>
             </div>
@@ -655,7 +712,7 @@ export default function AdminShipmentDetailPage({
                 error={shipmentFormErrors.destination_city}
               />
 
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2">
                 <Label htmlFor="detail_consignee_name">Consignee Name</Label>
                 <Input
                   id="detail_consignee_name"
@@ -671,6 +728,71 @@ export default function AdminShipmentDetailPage({
                 {shipmentFormErrors.consignee_name ? (
                   <p className="text-xs text-red-600">
                     {shipmentFormErrors.consignee_name}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="detail_receiver_name">
+                  Receiver's Name
+                  {shipmentFormValues.status === "Delivered" ? (
+                    <span className="text-red-600"> *</span>
+                  ) : null}
+                </Label>
+                <Input
+                  id="detail_receiver_name"
+                  value={shipmentFormValues.receiver_name}
+                  onChange={(event) =>
+                    onShipmentFieldChange(
+                      "receiver_name",
+                      capitalizeFirstLetter(event.target.value),
+                    )
+                  }
+                  disabled={isSavingShipment}
+                  placeholder="Enter receiver's name"
+                />
+                {shipmentFormErrors.receiver_name ? (
+                  <p className="text-xs text-red-600">
+                    {shipmentFormErrors.receiver_name}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="detail_delivery_datetime">
+                  Delivery Date &amp; Time (Status date and time)
+                  {shipmentFormValues.status === "Delivered" ? (
+                    <span className="text-red-600"> *</span>
+                  ) : null}
+                </Label>
+                <Input
+                  id="detail_delivery_datetime"
+                  type="datetime-local"
+                  value={getDeliveryDateTimeInput(
+                    shipmentFormValues.delivery_date,
+                    shipmentFormValues.delivery_time,
+                  )}
+                  onChange={(event) => {
+                    const nextDelivery = splitDeliveryDateTimeInput(
+                      event.target.value,
+                    );
+                    setShipmentFormValues((prev) =>
+                      prev ? { ...prev, ...nextDelivery } : prev,
+                    );
+                    setShipmentFormErrors((prev) => ({
+                      ...prev,
+                      delivery_date: undefined,
+                      delivery_time: undefined,
+                    }));
+                    setShipmentActionError(null);
+                  }}
+                  disabled={isSavingShipment}
+                />
+                {shipmentFormErrors.delivery_date ||
+                shipmentFormErrors.delivery_time ? (
+                  <p className="text-xs text-red-600">
+                    {shipmentFormErrors.delivery_date ??
+                      shipmentFormErrors.delivery_time}
                   </p>
                 ) : null}
               </div>
@@ -721,23 +843,37 @@ export default function AdminShipmentDetailPage({
         open={showDeliveryDialog}
         date={shipmentFormValues.delivery_date}
         time={shipmentFormValues.delivery_time}
+        receiverName={shipmentFormValues.receiver_name}
         error={deliveryDialogError}
         idPrefix="edit"
-        description="Delivery date and time are required before this shipment can be saved as delivered."
+        description="Complete only the missing delivery information before saving this shipment as delivered."
+        showReceiverName={deliveryDialogFields.receiverName}
+        showDeliveryDateTime={deliveryDialogFields.deliveryDateTime}
         onDateChange={(value) => onShipmentFieldChange("delivery_date", value)}
         onTimeChange={(value) => onShipmentFieldChange("delivery_time", value)}
+        onReceiverNameChange={(value) =>
+          onShipmentFieldChange("receiver_name", capitalizeFirstLetter(value))
+        }
         onConfirm={confirmDeliveryDetails}
         onCancel={() => {
-          setShipmentFormValues((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  status: shipment.status ?? "",
-                  delivery_date: shipment.delivery_date ?? "",
-                  delivery_time: shipment.delivery_time?.slice(0, 5) ?? "",
-                }
-              : prev,
-          );
+          if (deliverySnapshot) {
+            setShipmentFormValues((prev) =>
+              prev ? { ...prev, ...deliverySnapshot } : prev,
+            );
+          } else {
+            setShipmentFormValues((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    status: shipment.status ?? "",
+                    receiver_name: shipment.receiver_name ?? "",
+                    delivery_date: shipment.delivery_date ?? "",
+                    delivery_time: shipment.delivery_time?.slice(0, 5) ?? "",
+                  }
+                : prev,
+            );
+          }
+          setDeliverySnapshot(null);
           setDeliveryDialogError(null);
           setShowDeliveryDialog(false);
         }}

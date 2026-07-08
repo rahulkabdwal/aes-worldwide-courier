@@ -87,6 +87,7 @@ export interface Database {
           network_tracking_id: string | null;
           consignor_name: string | null;
           consignee_name: string | null;
+          receiver_name: string | null;
           pod_url: string | null;
           created_at: string;
           updated_at: string;
@@ -111,6 +112,7 @@ export interface Database {
           network_tracking_id?: string | null;
           consignor_name?: string | null;
           consignee_name?: string | null;
+          receiver_name?: string | null;
           pod_url?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -135,6 +137,7 @@ export interface Database {
           network_tracking_id?: string | null;
           consignor_name?: string | null;
           consignee_name?: string | null;
+          receiver_name?: string | null;
           pod_url?: string | null;
           created_at?: string;
           updated_at?: string;

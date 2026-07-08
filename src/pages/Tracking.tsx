@@ -85,6 +85,36 @@ function hasEventTitle(event: TrackingEvent): event is VisibleTrackingEvent {
   return Boolean(event.event_title?.trim());
 }
 
+function getStatusBadgeClass(status: string | null) {
+  const normalizedStatus = status?.trim().toLowerCase() ?? "";
+
+  if (normalizedStatus === "delivered") {
+    return "border-green-300 bg-green-100 text-green-900 shadow-green-100/80";
+  }
+
+  if (normalizedStatus === "in transit") {
+    return "border-blue-200 bg-blue-50 text-blue-800";
+  }
+
+  if (normalizedStatus === "out for delivery") {
+    return "border-orange-200 bg-orange-50 text-orange-800";
+  }
+
+  if (normalizedStatus === "pending") {
+    return "border-neutral-200 bg-neutral-100 text-neutral-700";
+  }
+
+  if (
+    normalizedStatus === "exception" ||
+    normalizedStatus === "delayed" ||
+    normalizedStatus === "failed"
+  ) {
+    return "border-red-200 bg-red-50 text-red-800";
+  }
+
+  return "border-neutral-200 bg-white text-neutral-700";
+}
+
 export default function Tracking() {
   const [trackingId, setTrackingId] = useState("");
   const [shipment, setShipment] = useState<Shipment | null>(null);
@@ -224,7 +254,7 @@ export default function Tracking() {
                         </h2>
                       </div>
                     </div>
-                    <span className={`w-fit rounded-full border px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${isDelivered ? "border-green-100 bg-green-50 text-green-700" : "border-orange-100 bg-orange-50 text-primary-dark"}`}>
+                    <span className={`w-fit rounded-2xl border px-5 py-1.5 text-sm font-black uppercase tracking-[0.14em] shadow-md [@media(max-height:800px)]:px-4 [@media(max-height:800px)]:py-1 [@media(max-height:800px)]:text-xs ${getStatusBadgeClass(shipment.status)}`}>
                       {shipment.status ?? "Unknown"}
                     </span>
                   </div>
@@ -256,6 +286,9 @@ export default function Tracking() {
                     <InfoTile label="Service Mode" icon={Truck}>{shipment.service_mode ?? "N/A"}</InfoTile>
                     {shipment.consignee_name?.trim() ? (
                       <InfoTile label="Consignee" icon={UserRound}>{shipment.consignee_name}</InfoTile>
+                    ) : null}
+                    {shipment.receiver_name?.trim() ? (
+                      <InfoTile label="Receiver's Name" icon={UserRound}>{shipment.receiver_name}</InfoTile>
                     ) : null}
                     {isDelivered ? (
                       <InfoTile label="Delivered" icon={CalendarDays}>
