@@ -23,6 +23,12 @@ type ShipmentRouteProps = {
   };
 };
 
+type TrackingRouteProps = {
+  params: {
+    trackingId?: string;
+  };
+};
+
 function ProtectedAdminShipmentsRoute() {
   return (
     <RequireAdminAuth>
@@ -37,6 +43,10 @@ function ProtectedAdminShipmentDetailRoute({ params }: ShipmentRouteProps) {
       <AdminShipmentDetailPage shipmentId={params.id} />
     </RequireAdminAuth>
   );
+}
+
+function TrackingRoute({ params }: TrackingRouteProps) {
+  return <Tracking initialTrackingId={params.trackingId} />;
 }
 
 function ScrollToTop() {
@@ -67,6 +77,7 @@ function Router() {
       <Route path="/about-us" component={AboutUs} />
       <Route path="/about" component={AboutUs} />
       <Route path="/services" component={Services} />
+      <Route path="/tracking/:trackingId" component={TrackingRoute} />
       <Route path="/tracking" component={Tracking} />
       <Route path="/contact" component={Contact} />
       <Route path="/reset-password" component={ResetPassword} />

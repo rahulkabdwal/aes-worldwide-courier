@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import {
   CalendarDays,
   FileCheck2,
@@ -19,6 +20,10 @@ import { getNetworkTrackingUrl } from "@/lib/tracking-urls";
 type Shipment = Database["public"]["Tables"]["shipments"]["Row"];
 type TrackingEvent = Database["public"]["Tables"]["tracking_events"]["Row"];
 type VisibleTrackingEvent = TrackingEvent & { event_title: string };
+
+type TrackingProps = {
+  initialTrackingId?: string;
+};
 
 function formatDate(value: string | null) {
   if (!value) return "N/A";
@@ -115,7 +120,12 @@ function getStatusBadgeClass(status: string | null) {
   return "border-neutral-200 bg-white text-neutral-700";
 }
 
-export default function Tracking() {
+function isSelfCarrier(carrier: string) {
+  return carrier.trim().toLowerCase() === "self (aes worldwide courier)";
+}
+
+export default function Tracking({ initialTrackingId }: TrackingProps = {}) {
+  const [, navigate] = useLocation();
   const [trackingId, setTrackingId] = useState("");
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [events, setEvents] = useState<TrackingEvent[]>([]);
@@ -130,6 +140,10 @@ export default function Tracking() {
     hasNetworkTracking
       ? getNetworkTrackingUrl(networkCarrier, networkTrackingId)
       : "";
+  const isInternalNetworkTrackingUrl = networkTrackingUrl.startsWith("/tracking/");
+  const networkCarrierLabel = isSelfCarrier(networkCarrier)
+    ? "AES Worldwide Courier"
+    : networkCarrier;
   const visibleEvents = events.filter(hasEventTitle).sort((a, b) => {
     const bTime = new Date(b.event_time ?? b.created_at).getTime();
     const aTime = new Date(a.event_time ?? a.created_at).getTime();
@@ -141,9 +155,8 @@ export default function Tracking() {
     shipment?.status?.trim().toLowerCase() === "delivered" &&
     Boolean(shipment.pod_url?.trim());
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const normalizedTrackingId = trackingId.trim();
+  const lookupShipment = useCallback(async (nextTrackingId: string) => {
+    const normalizedTrackingId = nextTrackingId.trim();
     if (!normalizedTrackingId) return;
 
     setIsSearching(true);
@@ -193,6 +206,37 @@ export default function Tracking() {
       setIsSearching(false);
       setHasSearched(true);
     }
+  }, []);
+
+  useEffect(() => {
+    if (!initialTrackingId) {
+      setTrackingId("");
+      return;
+    }
+
+    const decodedTrackingId = decodeURIComponent(initialTrackingId).trim();
+    setTrackingId(decodedTrackingId);
+    void lookupShipment(decodedTrackingId);
+  }, [initialTrackingId, lookupShipment]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const normalizedTrackingId = trackingId.trim();
+    if (!normalizedTrackingId) return;
+
+    const nextPath = `/tracking/${encodeURIComponent(normalizedTrackingId)}`;
+    navigate(nextPath);
+
+    if (initialTrackingId?.trim() === normalizedTrackingId) {
+      void lookupShipment(normalizedTrackingId);
+    }
+  };
+
+  const handleNetworkTrackingClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isInternalNetworkTrackingUrl) return;
+
+    event.preventDefault();
+    navigate(networkTrackingUrl);
   };
 
   return (
@@ -208,9 +252,7 @@ export default function Tracking() {
                 type="text"
                 placeholder="Enter tracking number"
                 value={trackingId}
-                onChange={(e) => setTrackingId(e.target.value.replace(/\D/g, ""))}
-                inputMode="numeric"
-                pattern="[0-9]*"
+                onChange={(e) => setTrackingId(e.target.value)}
                 className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-2.5 pl-10 pr-24 font-mono text-sm shadow-sm outline-none transition-all placeholder:text-sm focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/15 md:pl-12 md:pr-28 md:text-base md:placeholder:text-base [@media(max-height:800px)]:py-2"
               />
               <Search className="absolute left-3.5 md:left-4 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 md:w-5 md:h-5" />
@@ -263,8 +305,14 @@ export default function Tracking() {
                     <div className="mt-2 flex items-center gap-2 rounded-xl border border-orange-100 bg-orange-50/60 px-2.5 py-1.5 text-xs text-neutral-800 md:text-sm [@media(max-height:800px)]:mt-1.5 [@media(max-height:800px)]:py-1.5">
                       <Network className="size-4 shrink-0 text-primary" aria-hidden="true" />
                       <span className="min-w-0">
-                        <span className="font-semibold">Forwarded via {networkCarrier}: </span>
-                        <a href={networkTrackingUrl} target="_blank" rel="noopener noreferrer" className="break-all font-mono font-bold text-primary-dark underline underline-offset-4">
+                        <span className="font-semibold">Forwarded via {networkCarrierLabel}: </span>
+                        <a
+                          href={networkTrackingUrl}
+                          target={isInternalNetworkTrackingUrl ? undefined : "_blank"}
+                          rel={isInternalNetworkTrackingUrl ? undefined : "noopener noreferrer"}
+                          onClick={handleNetworkTrackingClick}
+                          className="break-all font-mono font-bold text-primary-dark underline underline-offset-4"
+                        >
                           {networkTrackingId}
                         </a>
                       </span>
